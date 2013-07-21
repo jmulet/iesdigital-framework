@@ -578,4 +578,9 @@ public class UIFrameworkJR implements UIFramework{
         centralSplits.setChildren(children2);
     }
 
+    @Override
+    public String printLayout() {
+        throw new UnsupportedOperationException("Not supported yet.");
+    }
+
 }

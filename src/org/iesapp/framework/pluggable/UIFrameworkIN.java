@@ -7,7 +7,10 @@ package org.iesapp.framework.pluggable;
 import com.l2fprod.common.swing.StatusBar;
 import java.awt.BorderLayout;
 import java.awt.Component;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.IOException;
+import java.io.ObjectOutputStream;
 import java.util.ArrayList;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -20,7 +23,6 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JToggleButton;
 import javax.swing.JToolBar;
-import javax.swing.SwingUtilities;
 import net.infonode.docking.DockingWindow;
 import net.infonode.docking.DockingWindowAdapter;
 import net.infonode.docking.OperationAbortedException;
@@ -529,4 +531,24 @@ public class UIFrameworkIN implements UIFramework{
         return win;
     }
 
+    public String printLayout()
+    {
+        ObjectOutputStream out = null;
+        try {
+            ByteArrayOutputStream bos = new ByteArrayOutputStream();
+            out = new ObjectOutputStream(bos);
+            rootWindow.write(out);
+            out.close();
+            return bos.toString();
+        } catch (IOException ex) {
+            Logger.getLogger(UIFrameworkIN.class.getName()).log(Level.SEVERE, null, ex);
+        } finally {
+            try {
+                out.close();
+            } catch (IOException ex) {
+                Logger.getLogger(UIFrameworkIN.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        }
+        return null;
+    }
 }

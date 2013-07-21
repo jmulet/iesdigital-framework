@@ -4,7 +4,6 @@
  */
 package org.iesapp.framework.pluggable;
 
-import org.iesapp.framework.pluggable.preferences.UserPreferencesModule;
 import ch.swingfx.twinkle.NotificationBuilder;
 import ch.swingfx.twinkle.style.INotificationStyle;
 import ch.swingfx.twinkle.style.theme.DarkDefaultNotification;
@@ -24,6 +23,8 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.io.File;
@@ -67,6 +68,7 @@ import org.iesapp.framework.pluggable.modulesAPI.ModulesManager;
 import org.iesapp.framework.pluggable.modulesAPI.Property;
 import org.iesapp.framework.pluggable.modulesAPI.UtilsFactory;
 import org.iesapp.framework.pluggable.pluginsAPI.BeanAnchorPoint;
+import org.iesapp.framework.pluggable.preferences.UserPreferencesModule;
 import org.iesapp.framework.start.Start;
 import org.iesapp.framework.util.CoreCfg;
 import org.iesapp.framework.util.CoreIni;
@@ -156,6 +158,16 @@ public class DockingFrameworkApp extends JFrame implements Closable{
        
        
        initComponents();
+       
+       //register close behavior
+       this.addWindowListener( new WindowAdapter(){
+
+            @Override
+            public void windowClosing(WindowEvent e) {
+                formWindowClosing(e);
+            }
+           
+       });
        
        //Help track and menu
        jButtonHT.addActionListener(new CSH.DisplayHelpAfterTracking(coreCfg.getMainHelpBroker()));
@@ -334,6 +346,7 @@ public class DockingFrameworkApp extends JFrame implements Closable{
         jMenuItem6 = new javax.swing.JMenuItem();
         jSeparator3 = new javax.swing.JPopupMenu.Separator();
         jMenuItem3 = new javax.swing.JMenuItem();
+        jMenuItem7 = new javax.swing.JMenuItem();
         jMenuModules = new javax.swing.JMenu();
         jMenuAdministrador = new javax.swing.JMenu();
         jMenuItemStartAdmin = new javax.swing.JMenuItem();
@@ -357,14 +370,6 @@ public class DockingFrameworkApp extends JFrame implements Closable{
         switchLabel.setIcon(new javax.swing.ImageIcon(getClass().getResource("/org/iesapp/framework/icons/switchUser.gif"))); // NOI18N
 
         setDefaultCloseOperation(javax.swing.WindowConstants.DO_NOTHING_ON_CLOSE);
-        addWindowListener(new java.awt.event.WindowAdapter() {
-            public void windowClosing(java.awt.event.WindowEvent evt) {
-                formWindowClosing(evt);
-            }
-            public void windowOpened(java.awt.event.WindowEvent evt) {
-                formWindowOpened(evt);
-            }
-        });
 
         jToolBar1.setBorder(null);
         jToolBar1.setFloatable(false);
@@ -436,6 +441,14 @@ public class DockingFrameworkApp extends JFrame implements Closable{
             }
         });
         jMenuFitxer.add(jMenuItem3);
+
+        jMenuItem7.setText("jMenuItem7");
+        jMenuItem7.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jMenuItem7ActionPerformed(evt);
+            }
+        });
+        jMenuFitxer.add(jMenuItem7);
 
         jMenuBar1.add(jMenuFitxer);
 
@@ -713,22 +726,11 @@ public class DockingFrameworkApp extends JFrame implements Closable{
        
     }
     
-    private void formWindowOpened(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_formWindowOpened
-         //Unused
-    }//GEN-LAST:event_formWindowOpened
-
-    private void formWindowClosing(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_formWindowClosing
-       if(appClass.getName().equals(anuncisClassName))
-       { 
-           windowManager.setDisplayMode(WindowManager.MODE_TOOLBAR);
-       }
-       else
-       {
-           //Depends on defaultclose
-           this.exitApp();
-       }
-           
-    }//GEN-LAST:event_formWindowClosing
+   
+    //Override this method if you wish another close behaviour for your application
+    public void formWindowClosing(java.awt.event.WindowEvent evt) {                                   
+           this.exitApp();           
+    }                                  
 
     private void jMenuItem4ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem4ActionPerformed
         onSwitchUser(true);
@@ -806,11 +808,17 @@ public class DockingFrameworkApp extends JFrame implements Closable{
     }//GEN-LAST:event_jMenuItem1ActionPerformed
 
     private void jMenuItem6ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem6ActionPerformed
+        
         //Add module
         TopModuleWindow win = new UserPreferencesModule();
         win.initialize(stamper, stray, coreCfg, uiFramework);
         uiFramework.addTopModuleWindow(win, true, false);
     }//GEN-LAST:event_jMenuItem6ActionPerformed
+
+    private void jMenuItem7ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem7ActionPerformed
+        System.out.println("========================");
+        System.out.println(uiFramework.printLayout());
+    }//GEN-LAST:event_jMenuItem7ActionPerformed
 
 
  
@@ -1487,6 +1495,7 @@ public class DockingFrameworkApp extends JFrame implements Closable{
     private javax.swing.JMenuItem jMenuItem4;
     private javax.swing.JMenuItem jMenuItem5;
     private javax.swing.JMenuItem jMenuItem6;
+    private javax.swing.JMenuItem jMenuItem7;
     private javax.swing.JCheckBoxMenuItem jMenuItemFullscreen;
     private javax.swing.JMenuItem jMenuItemStartAdmin;
     private javax.swing.JMenu jMenuLookandfeel;

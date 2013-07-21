@@ -22,4 +22,5 @@ public interface UIFramework {
     public void setMenus(TopModuleWindow win);
     public void setSelectedTopWindow(String identifier);
     public void setDistribution(int i);
+    public String printLayout();
 }
