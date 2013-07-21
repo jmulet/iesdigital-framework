@@ -220,6 +220,7 @@ public class UIFrameworkIN implements UIFramework{
             Logger.getLogger(DockingFrameworkApp.class.getName()).log(Level.SEVERE, null, ex);
             JOptionPane.showMessageDialog(javar.JRDialog.getActiveFrame(), "Problem loading module: "+module.getClassName()+"\n"+ex);
         }
+        this.printLayout();
         DebugLogger.getInstance().addText(">>>>> quit UIFrameworkJR.addTopModuleWindow");
         return id;
    
@@ -381,7 +382,7 @@ public class UIFrameworkIN implements UIFramework{
         DockingUtil.addWindow(createNewView, rootWindow);
         createNewView.requestFocus();
         //Li passam el tabComponent
-        
+        this.printLayout();
         return id;
     }
 

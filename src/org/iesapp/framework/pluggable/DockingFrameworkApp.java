@@ -346,7 +346,6 @@ public class DockingFrameworkApp extends JFrame implements Closable{
         jMenuItem6 = new javax.swing.JMenuItem();
         jSeparator3 = new javax.swing.JPopupMenu.Separator();
         jMenuItem3 = new javax.swing.JMenuItem();
-        jMenuItem7 = new javax.swing.JMenuItem();
         jMenuModules = new javax.swing.JMenu();
         jMenuAdministrador = new javax.swing.JMenu();
         jMenuItemStartAdmin = new javax.swing.JMenuItem();
@@ -441,14 +440,6 @@ public class DockingFrameworkApp extends JFrame implements Closable{
             }
         });
         jMenuFitxer.add(jMenuItem3);
-
-        jMenuItem7.setText("jMenuItem7");
-        jMenuItem7.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jMenuItem7ActionPerformed(evt);
-            }
-        });
-        jMenuFitxer.add(jMenuItem7);
 
         jMenuBar1.add(jMenuFitxer);
 
@@ -814,11 +805,6 @@ public class DockingFrameworkApp extends JFrame implements Closable{
         win.initialize(stamper, stray, coreCfg, uiFramework);
         uiFramework.addTopModuleWindow(win, true, false);
     }//GEN-LAST:event_jMenuItem6ActionPerformed
-
-    private void jMenuItem7ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem7ActionPerformed
-        System.out.println("========================");
-        System.out.println(uiFramework.printLayout());
-    }//GEN-LAST:event_jMenuItem7ActionPerformed
 
 
  
@@ -1495,7 +1481,6 @@ public class DockingFrameworkApp extends JFrame implements Closable{
     private javax.swing.JMenuItem jMenuItem4;
     private javax.swing.JMenuItem jMenuItem5;
     private javax.swing.JMenuItem jMenuItem6;
-    private javax.swing.JMenuItem jMenuItem7;
     private javax.swing.JCheckBoxMenuItem jMenuItemFullscreen;
     private javax.swing.JMenuItem jMenuItemStartAdmin;
     private javax.swing.JMenu jMenuLookandfeel;
