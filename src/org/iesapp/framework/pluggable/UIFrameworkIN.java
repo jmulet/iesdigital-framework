@@ -532,15 +532,17 @@ public class UIFrameworkIN implements UIFramework{
         return win;
     }
 
+    @Override
     public String printLayout()
     {
+        String printlayout = "LAYOUT: ";
         ObjectOutputStream out = null;
         try {
             ByteArrayOutputStream bos = new ByteArrayOutputStream();
             out = new ObjectOutputStream(bos);
             rootWindow.write(out);
             out.close();
-            return bos.toString();
+            return printlayout + bos.toString();
         } catch (IOException ex) {
             Logger.getLogger(UIFrameworkIN.class.getName()).log(Level.SEVERE, null, ex);
         } finally {
@@ -550,6 +552,6 @@ public class UIFrameworkIN implements UIFramework{
                 Logger.getLogger(UIFrameworkIN.class.getName()).log(Level.SEVERE, null, ex);
             }
         }
-        return null;
+        return printlayout;
     }
 }
