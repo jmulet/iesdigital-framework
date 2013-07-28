@@ -14,6 +14,11 @@ public class BeanMetaInf {
     protected String author="";
     protected String version="";
     protected String dependencies="";
+    protected String url="";
+    protected String minFrameworkVersion="";
+    protected String minClientID="";
+    protected String minClientSGD="";
+    
     protected HashMap<String, String> descriptionMap;
 
     public BeanMetaInf()
@@ -69,5 +74,37 @@ public class BeanMetaInf {
 
     public HashMap<String, String> getDescriptionMap() {
         return descriptionMap;
+    }
+
+    public String getUrl() {
+        return url;
+    }
+
+    public void setUrl(String url) {
+        this.url = url;
+    }
+
+    public String getMinFrameworkVersion() {
+        return minFrameworkVersion;
+    }
+
+    public void setMinFrameworkVersion(String minFrameworkVersion) {
+        this.minFrameworkVersion = minFrameworkVersion;
+    }
+
+    public String getMinClientID() {
+        return minClientID;
+    }
+
+    public void setMinClientID(String minClientID) {
+        this.minClientID = minClientID;
+    }
+
+    public String getMinClientSGD() {
+        return minClientSGD;
+    }
+
+    public void setMinClientSGD(String minClientSGD) {
+        this.minClientSGD = minClientSGD;
     }
 }

@@ -13,12 +13,12 @@ import com.jgoodies.looks.FontPolicy;
 import com.jgoodies.looks.FontSet;
 import com.jgoodies.looks.FontSets;
 import com.jgoodies.looks.plastic.PlasticLookAndFeel;
+import com.l2fprod.common.swing.JLinkButton;
 import java.awt.Component;
 import java.awt.Container;
 import java.awt.Desktop;
 import java.awt.Font;
 import java.awt.Insets;
-import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
@@ -72,6 +72,8 @@ import org.iesapp.framework.pluggable.preferences.UserPreferencesModule;
 import org.iesapp.framework.start.Start;
 import org.iesapp.framework.util.CoreCfg;
 import org.iesapp.framework.util.CoreIni;
+import org.iesapp.framework.util.JarClassLoader;
+import org.iesapp.updater.RemoteUpdater;
 import org.iesapp.util.StringUtils;
 
 /**
@@ -96,7 +98,6 @@ public class DockingFrameworkApp extends JFrame implements Closable{
     protected String pwd = "";
     protected String role;
     protected ImageIcon MODULE_ICON = new ImageIcon(DockingFrameworkApp.class.getResource("/org/iesapp/framework/icons/module_icon.gif"));
-    protected ArrayList<BeanModule> loadedModules;
     protected Class appClass;
     protected String requiredJar;
     protected String requiredModuleName;
@@ -116,13 +117,14 @@ public class DockingFrameworkApp extends JFrame implements Closable{
     protected final String anuncisClassName = "org.iesapp.apps.anuncis.AnuncisApp";
     protected final VToolbar vtoolbar;
     
+    
     /**
      * Creates new form NewJFrame
+     * @param args
      */
     public DockingFrameworkApp(String[] args) {
        //Initialize core and creates a new istance of coreCfg 
-       Toolkit.getDefaultToolkit().setDynamicLayout(true);
-        
+       //Toolkit.getDefaultToolkit().setDynamicLayout(true);
        initializeCore(args);
        
        stamper = new Stamp();
@@ -510,9 +512,12 @@ public class DockingFrameworkApp extends JFrame implements Closable{
         jMenuAjuda.setText(bundle.getString("help")); // NOI18N
         jMenuAjuda.setName("jMenuAjuda"); // NOI18N
 
+        jMenuItem2.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_F1, 0));
+        jMenuItem2.setIcon(new javax.swing.ImageIcon(getClass().getResource("/org/iesapp/framework/icons/support.png"))); // NOI18N
         jMenuItem2.setText(bundle.getString("helpcontents")); // NOI18N
         jMenuAjuda.add(jMenuItem2);
 
+        jMenuAbout.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_F1, java.awt.event.InputEvent.CTRL_MASK));
         jMenuAbout.setIcon(new javax.swing.ImageIcon(getClass().getResource("/org/iesapp/framework/icons/help.gif"))); // NOI18N
         jMenuAbout.setText(bundle.getString("about")); // NOI18N
         jMenuAbout.setActionCommand("about");
@@ -569,6 +574,7 @@ public class DockingFrameworkApp extends JFrame implements Closable{
     //Initialize App
     public void initializeFramework()
     {
+        
         //Set Lookandfeel from the very begining
         //By default set systemLookandFeel
         String lookandfeel="Nimbus";
@@ -650,7 +656,7 @@ public class DockingFrameworkApp extends JFrame implements Closable{
       
          //Initialize your desired framework here
        uiFramework = (UIFramework) new UIFrameworkIN(coreCfg, stamper, stray, jToggleButton1);
-       uiFramework.initialize(windowManager, appDisplayName, beforeMenu, afterMenu);
+       uiFramework.initialize(windowManager, appDisplayName, beforeMenu, afterMenu, this.appClass.getName());
        
         //// set application display parameters
            
@@ -710,7 +716,6 @@ public class DockingFrameworkApp extends JFrame implements Closable{
             }
         }
         
-        
          onSwitchUser(false);
          //Overridable method
          onWindowOpened();  
@@ -743,6 +748,7 @@ public class DockingFrameworkApp extends JFrame implements Closable{
                 String version = CoreCfg.VERSION;
        
                 TopModuleWindow win = uiFramework.getSelectedTopModuleWindow();
+                BeanModule beanModule = null;
                 if(win!=null)
                 {
                     name = win.getModuleDisplayName();
@@ -750,10 +756,11 @@ public class DockingFrameworkApp extends JFrame implements Closable{
                     if(win.getBeanModule()!=null)
                     {
                         version = win.getBeanModule().getBeanMetaINF().getVersion();
+                        beanModule = win.getBeanModule();
                     }
                     
                 }
-                org.iesapp.framework.dialogs.AboutDlg dlg = new org.iesapp.framework.dialogs.AboutDlg(DockingFrameworkApp.this, true, name, desc, version, coreCfg);
+                org.iesapp.framework.dialogs.AboutDlg dlg = new org.iesapp.framework.dialogs.AboutDlg(DockingFrameworkApp.this, true, name, desc, version, beanModule, coreCfg);
                 dlg.setLocationRelativeTo(null);
                 dlg.setVisible(true);
         
@@ -801,9 +808,15 @@ public class DockingFrameworkApp extends JFrame implements Closable{
     private void jMenuItem6ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem6ActionPerformed
         
         //Add module
-        TopModuleWindow win = new UserPreferencesModule();
-        win.initialize(stamper, stray, coreCfg, uiFramework);
-        uiFramework.addTopModuleWindow(win, true, false);
+        //Check if already exists
+        //First check if logger is already instantiated
+        ArrayList<String> instances = TopModuleRegistry.getCurrentInstancesOf(UserPreferencesModule.class.getName());
+        if (instances.isEmpty()) {
+             TopModuleWindow win = new UserPreferencesModule();
+             win.initialize(stamper, stray, coreCfg, uiFramework);
+             uiFramework.addTopModuleWindow(win, "left", true, false);
+        }
+       
     }//GEN-LAST:event_jMenuItem6ActionPerformed
 
 
@@ -868,7 +881,7 @@ public class DockingFrameworkApp extends JFrame implements Closable{
         DebugLogger.getInstance().addText("TopModuleRegistry.reset()...");
         TopModuleRegistry.reset();
         
-        if(loadedModules==null || iWasAdmin)
+        if(iWasAdmin)
         {
             try {
                 if (genericFactory == null || iWasAdmin) {
@@ -879,9 +892,7 @@ public class DockingFrameworkApp extends JFrame implements Closable{
                 ErrorDisplay.showMsg(ex.toString());
                 this.quitApp();
             }
-            DebugLogger.getInstance().addText("GenericFactory.loadModules()...");
-            loadedModules = genericFactory.loadModules();
-            DebugLogger.getInstance().addText("Loaded # modules = "+loadedModules.size());
+             
         }
         
         
@@ -900,7 +911,7 @@ public class DockingFrameworkApp extends JFrame implements Closable{
         }
         
         
-        for(BeanModule module: loadedModules)
+        for(BeanModule module: genericFactory.loadModulesCache())
         {
             if (module.getModuleType() == BeanModule.MODULETYPE_STD) {
                 loadSTDModule(module);
@@ -923,7 +934,7 @@ public class DockingFrameworkApp extends JFrame implements Closable{
                     continue;
                 }
 
-                org.iesapp.framework.util.JarClassLoader.getInstance().addJarToClasspath(new File(CoreCfg.contextRoot + File.separator + "modules" + File.separator + module.getJar()));
+                JarClassLoader deamonClassLoader = JarClassLoader.getInstance().getSubInstance(module);
                 try {
                     TopModuleDeamon deamon = null;
                     if(TopModuleDeamon.getActiveDeamons().containsKey(beandeamon.getDeamonClassName()+"@"+user))
@@ -932,7 +943,7 @@ public class DockingFrameworkApp extends JFrame implements Closable{
                     }
                     else
                     {
-                        Class<?> forName = Class.forName(beandeamon.getDeamonClassName());
+                        Class<?> forName =deamonClassLoader.loadClass(beandeamon.getDeamonClassName());
                         deamon = (TopModuleDeamon) forName.newInstance();
                         deamon.initialize(coreCfg);
 
@@ -972,7 +983,7 @@ public class DockingFrameworkApp extends JFrame implements Closable{
                                 
                                 //Find module by class name
                                 BeanModule realMod = null;
-                                for(BeanModule mod: loadedModules)
+                                for(BeanModule mod: genericFactory.loadModulesCache())
                                 {
                                     if(mod.getClassName().equals(cn))
                                     {
@@ -1058,14 +1069,14 @@ public class DockingFrameworkApp extends JFrame implements Closable{
             public void actionPerformed(ActionEvent e) {
                 String classname = e.getActionCommand();
                 int idx = -1;
-                for (int i = 0; i < loadedModules.size(); i++) {
-                    if (loadedModules.get(i).getClassName().equals(classname)) {
+                for (int i = 0; i < genericFactory.loadModulesCache().size(); i++) {
+                    if (genericFactory.loadModulesCache().get(i).getClassName().equals(classname)) {
                         idx = i;
                         break;
                     }
                 }
                 if (idx >= 0) {
-                    DockingFrameworkApp.this.uiFramework.addTopModuleWindow(loadedModules.get(idx), true, true);   
+                    DockingFrameworkApp.this.uiFramework.addTopModuleWindow(genericFactory.loadModulesCache().get(idx), true, true);   
                 }
             }
         };
@@ -1198,7 +1209,7 @@ public class DockingFrameworkApp extends JFrame implements Closable{
                         public void actionPerformed(ActionEvent e) {
                             //Retrieve which is the actual beanModule
                             BeanModule beanModule = null;
-                            for (BeanModule mod : loadedModules) {
+                            for (BeanModule mod : genericFactory.loadModulesCache()) {
                                 if (mod.getClassName().equals(e.getActionCommand())) {
                                     beanModule = mod;
                                     break;
@@ -1277,7 +1288,7 @@ public class DockingFrameworkApp extends JFrame implements Closable{
                     public void actionPerformed(ActionEvent e) {
                         //Retrieve which is the actual beanModule
                         BeanModule beanModule = null;
-                        for (BeanModule mod : loadedModules) {
+                        for (BeanModule mod : genericFactory.loadModulesCache()) {
                             if (mod.getClassName().equals(e.getActionCommand())) {
                                 beanModule = mod;
                                 break;
@@ -1400,7 +1411,14 @@ public class DockingFrameworkApp extends JFrame implements Closable{
             //Delega al nucli iesDigital l'usuari amb el sistema de roles
             coreCfg.setUser(user);
             jMenuAdministrador.setVisible(coreCfg.getUserInfo().getGrant()==User.ADMIN);
-            
+     
+            //Look for new updates of system (only for certain users)
+            if (coreCfg.getUserInfo().getAbrev().equalsIgnoreCase("ADMIN") || coreCfg.getUserInfo().getRole().equalsIgnoreCase("ADMIN")
+                    || coreCfg.getUserInfo().getGrant() == User.ADMIN || coreCfg.getUserInfo().getGrant() == User.PREF) {
+                new UpdateTask().execute();
+            }
+
+     
              //Delega al nucli del sgd, el mateix usuari (si l'usuari no té associat
             //una idSGD, aleshores l'usuari és null)
             int idSGD = coreCfg.getUserInfo().getIdSGD();
@@ -1426,6 +1444,7 @@ public class DockingFrameworkApp extends JFrame implements Closable{
             }
             
             CoreCfg.admin = coreCfg.getUserInfo().getGrant()==User.ADMIN || coreCfg.getUserInfo().getGrant()==User.PREF;
+            
             if(user.equalsIgnoreCase("ADMIN"))
             {
                 jLabelUser.setText(bundle.getString("administrador"));
@@ -1531,6 +1550,7 @@ public class DockingFrameworkApp extends JFrame implements Closable{
     }
 
     public void onSwitchUserValid(){   
+       
         loadModules();
     }
 
@@ -1577,18 +1597,6 @@ public class DockingFrameworkApp extends JFrame implements Closable{
         jMenuItemStartAdmin.setEnabled(enable);
     }
 
-    protected class LongTask extends javax.swing.SwingWorker<Void,Void>
-    {
-        
-        @Override
-        protected Void doInBackground() throws Exception {
-            //Must be implemented by load modules
-            onSwitchUserValid();    
-            wait.dispose();
-            return null;
-        }
-        
-    }
     
     @Override
      public void quitApp() {
@@ -1695,4 +1703,56 @@ public class DockingFrameworkApp extends JFrame implements Closable{
         return newButton;
      }
      
+     
+    protected class UpdateTask extends javax.swing.SwingWorker<Void,Void>
+    {
+    
+        @Override
+        protected Void doInBackground() throws Exception {
+        
+        try {
+            //Do updater check in background
+            RemoteUpdater updater = new RemoteUpdater(CoreIni.getCore_repoURLs());
+            String latestVersion = updater.getLatestVersion();
+            
+            if(StringUtils.compare(latestVersion, CoreCfg.VERSION)>0)
+            {
+                JLinkButton label = new JLinkButton();
+                label.setIcon(new ImageIcon(getClass().getResource("/org/iesapp/framework/icons/bubble1.png")));
+                label.setText("New version "+latestVersion);      
+                ((StatusBarZone) DockingFrameworkApp.this.jStatusBar.getZone("second")).addComponent(label);
+                label.addMouseListener(new MouseAdapter() {
+                    @Override
+                    public void mouseClicked(MouseEvent e) {
+                        System.out.println("DO SOMETHING");
+                    }
+
+                });
+            }
+            uiFramework.setRemoteUpdater( updater );
+            
+            
+        } catch (Exception ex) { 
+            //Logger.getLogger(DockingFrameworkApp.class.getName()).log(Level.SEVERE, null, ex);
+        }  catch (Throwable ex) {
+           // Logger.getLogger(DockingFrameworkApp.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        
+        return null;
+    }
+    }
+    
+    protected class LongTask extends javax.swing.SwingWorker<Void,Void>
+    {
+        
+        @Override
+        protected Void doInBackground() throws Exception {
+            //Must be implemented by load modules
+            onSwitchUserValid();    
+            wait.dispose();
+            return null;
+        }
+        
+    }
+    
 }

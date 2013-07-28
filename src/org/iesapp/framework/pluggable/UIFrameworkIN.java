@@ -4,14 +4,16 @@
  */
 package org.iesapp.framework.pluggable;
 
+import com.l2fprod.common.swing.JLinkButton;
 import com.l2fprod.common.swing.StatusBar;
 import java.awt.BorderLayout;
 import java.awt.Component;
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.IOException;
-import java.io.ObjectOutputStream;
+import java.awt.Container;
+import java.awt.Point;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.ImageIcon;
@@ -20,13 +22,14 @@ import javax.swing.JMenu;
 import javax.swing.JMenuBar;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
-import javax.swing.JScrollPane;
 import javax.swing.JToggleButton;
 import javax.swing.JToolBar;
 import net.infonode.docking.DockingWindow;
 import net.infonode.docking.DockingWindowAdapter;
 import net.infonode.docking.OperationAbortedException;
 import net.infonode.docking.RootWindow;
+import net.infonode.docking.SplitWindow;
+import net.infonode.docking.TabWindow;
 import net.infonode.docking.View;
 import net.infonode.docking.mouse.DockingWindowActionMouseButtonListener;
 import net.infonode.docking.properties.RootWindowProperties;
@@ -36,8 +39,12 @@ import net.infonode.docking.util.DockingUtil;
 import net.infonode.docking.util.StringViewMap;
 
 import net.infonode.util.Direction;
+import org.iesapp.framework.dialogs.ModuleUpdaterDlg;
 import org.iesapp.framework.pluggable.modulesAPI.BeanModule;
 import org.iesapp.framework.util.CoreCfg;
+import org.iesapp.framework.util.JarClassLoader;
+import org.iesapp.updater.RemoteUpdater;
+import org.iesapp.util.StringUtils;
 
 
 /**
@@ -52,7 +59,7 @@ public class UIFrameworkIN implements UIFramework{
     private JPanel mainPanel;
    
     private final CoreCfg coreCfg;
-    private Stamp stamper;
+    private final Stamp stamper;
     private ArrayList<JMenu> beforeMenu;
     private ArrayList<JMenu> afterMenu;
     private final SysTray stray;
@@ -60,22 +67,26 @@ public class UIFrameworkIN implements UIFramework{
     private WindowManager windowManager;
     private StringViewMap viewMap;
     private RootWindow rootWindow;
-    private RootWindowProperties properties = new RootWindowProperties();
-    private DockingWindowsTheme currentTheme = new ShapedGradientDockingTheme();
+    private final RootWindowProperties properties = new RootWindowProperties();
+    private final DockingWindowsTheme currentTheme = new ShapedGradientDockingTheme();
     private TopModuleWindow lastFocusedTopModuleWindow;
+    private RemoteUpdater remoteUpdater;
+    private final HashMap<String, ModuleUpdaterDlg> updatersMap;
+    private String currentAppClass;
      
-
     public UIFrameworkIN(CoreCfg coreCfg, Stamp stamper, SysTray stray, JToggleButton jToggleButton1)
     {
         this.coreCfg = coreCfg;
         this.stamper = stamper;
         this.stray = stray;
         this.jToggleButton = jToggleButton1;  
+        updatersMap = new HashMap<String, ModuleUpdaterDlg>();
     }
     
     @Override
     public void initialize(final WindowManager windowManager, final String appDisplayName,
-                        final ArrayList<JMenu> beforeMenu, final ArrayList<JMenu> afterMenu ) {
+                        final ArrayList<JMenu> beforeMenu, final ArrayList<JMenu> afterMenu, 
+                        final String currentAppClass) {
         this.windowManager = windowManager;
         this.frame = windowManager.getFrame();
         this.beforeMenu = beforeMenu;
@@ -84,6 +95,7 @@ public class UIFrameworkIN implements UIFramework{
         this.jStatusBar1 = windowManager.getjStatusBar1();
         this.appDisplayName = appDisplayName;
         this.mainPanel = windowManager.getMainPanel();
+        this.currentAppClass = currentAppClass;
     
         //Layout
         setRootWindow();
@@ -114,7 +126,7 @@ public class UIFrameworkIN implements UIFramework{
                         for(int i=0; i<viewMap.getViewCount(); i++)
                         {
                             View viewtmp = viewMap.getViewAtIndex(i);
-                            TopModuleWindow tmw = extractTopModuleWindowFromView(viewtmp);
+                            TopModuleWindow tmw = ((TopModuleView) viewtmp).getTopModuleWindow();
                             if(tmw!=null && tmw.equals(findwin))
                             {
                                 viewtmp.makeVisible();
@@ -151,21 +163,16 @@ public class UIFrameworkIN implements UIFramework{
             if(!alreadyInstanced || (alreadyInstanced && module.isMultipleInstance()) )
             {
                 DebugLogger.getInstance().addText("CREATING::::");
-                //ModuleClassLoader moduleClassLoader = new ModuleClassLoader(ClassLoader.getSystemClassLoader());
-                org.iesapp.framework.util.JarClassLoader.getInstance().addJarToClasspath(new File(CoreCfg.contextRoot+"\\modules\\"+module.getJar() ));
-                //Include any other required lib
-                //Adds to classpath any other required lib for this module
-                for (String s : module.getRequiredLibs()) {
-                    org.iesapp.framework.util.JarClassLoader.getInstance().addJarToClasspath(new File(CoreCfg.contextRoot + "\\" + s));
-                }
+                
                 DebugLogger.getInstance().addText("Trying to find class for module :: "+module.getClassName());
-                Class<?> forName = Class.forName(module.getClassName());
-                 //org.openide.util.lookup.Lookups.forPath("modules").lookupAll(forName);            
+                JarClassLoader moduleClassLoader = JarClassLoader.getInstance().getSubInstance(module);
+                Class<?> forName = moduleClassLoader.loadClass(module.getClassName());
                 DebugLogger.getInstance().addText("Creating a new instance of module :: "+module.getClassName());
                 TopModuleWindow win = (TopModuleWindow) forName.newInstance();
                 
                 //Pass bean & ini parameters & initialize with moduleClassLoader
                 win.setBeanModule(module);
+                win.setModuleClassLoader(moduleClassLoader);
                 DebugLogger.getInstance().addText("@@@@@ The module "+module.getClassName()+" contains #plugins "+module.getInstalledPlugins().size());
                 win.iniParameters.setMap( module.getIniParameters() );
                 DebugLogger.getInstance().addText("@@@@@ initializing The module "+module.getClassName());
@@ -187,17 +194,11 @@ public class UIFrameworkIN implements UIFramework{
                     } else if (module.getDisplayPoint().getLocation().equals("topwindow")) {
                         id = TopModuleRegistry.register(forName.getName(), win);
                         win.setName(id);
-                        View createNewView = createNewView(win, displayname, module.getModuleIcon16x16(), module.isClosable());
-                       
+                        TopModuleView createNewView = new TopModuleView(displayname, module.getModuleIcon16x16(), module.isClosable(), module.getDisplayPoint().getParentId(), win);
                         viewMap.addView(id, createNewView);
-//                        TabWindow target = tabWindowCenter;
-//                        if(module.getDisplayPoint().getParentId().equals("right")) {
-//                           // target = tabWindowRight;
-//                        }
-//                        target.addTab(createNewView);
                         createNewView.makeVisible();
-                        //target.makeVisible();
-                        DockingUtil.addWindow(createNewView, rootWindow);
+                        //DockingUtil.addWindow(createNewView, rootWindow);
+                        createLayoutViewMap(createNewView);
                         createNewView.requestFocus();
                        
                         //createNewView.getViewProperties().getViewTitleBarProperties().getFocusedProperties().getCloseButtonProperties().setVisible(module.isClosable());
@@ -220,7 +221,6 @@ public class UIFrameworkIN implements UIFramework{
             Logger.getLogger(DockingFrameworkApp.class.getName()).log(Level.SEVERE, null, ex);
             JOptionPane.showMessageDialog(javar.JRDialog.getActiveFrame(), "Problem loading module: "+module.getClassName()+"\n"+ex);
         }
-        DebugLogger.getInstance().addText(this.printLayout());
         DebugLogger.getInstance().addText(">>>>> quit UIFrameworkJR.addTopModuleWindow");
         return id;
    
@@ -234,18 +234,21 @@ public class UIFrameworkIN implements UIFramework{
     @Override
     public void closeAll() {
         
-//        for(int i=0; i<rootWindow.getChildWindowCount(); i++)
-//        {
-//            DockingWindow childWindow = rootWindow.getChildWindow(i);
-//            recursivelyClose(childWindow);
-//        }
+        if(updatersMap!=null)
+        {
+            for(ModuleUpdaterDlg mu: updatersMap.values())
+            {
+                mu.dispose();
+            }
+            updatersMap.clear();
+        }
         
         for(int i=0; i<viewMap.getViewCount(); i++)
         {
             View view = viewMap.getViewAtIndex(i);
             if(view!=null)
             {
-                TopModuleWindow win = this.extractTopModuleWindowFromView(view);
+                TopModuleWindow win = ((TopModuleView) view).getTopModuleWindow();
                 if(win!=null)
                 {
                     view.close();
@@ -297,7 +300,54 @@ public class UIFrameworkIN implements UIFramework{
 //        pos = WindowManager.findMenuItemPos(menuBar, "jMenuAjuda");
 //        JMenu jMenuAjuda = menuBar.getMenu(pos);
 //        
-       ((StatusBarZone) jStatusBar1.getZone("third")).clear();
+          
+        StatusBarZone zone = ((StatusBarZone) jStatusBar1.getZone("third"));
+        zone.clear();
+        
+       //Add information about module versioning (if available)
+       if(remoteUpdater!=null  && win!= null)
+       {
+           BeanModule beanModule = win.getBeanModule();
+           if(beanModule!=null)
+           {
+                String className = StringUtils.noNull(beanModule.getClassName());
+                String lastVersionForModule = remoteUpdater.getModulesRepo().getLastVersionForModule(className);
+                
+                //System.out.println("Comparispj of "+lastVersionForModule+ " " + beanModule.getBeanMetaINF().getVersion());
+                
+                if(lastVersionForModule!=null && StringUtils.compare(lastVersionForModule, beanModule.getBeanMetaINF().getVersion())>0)
+                {
+                    final JLinkButton lbutton = new JLinkButton("New "+win.moduleDisplayName+" "+ lastVersionForModule);
+                    lbutton.setActionCommand(className);
+                    lbutton.setName("moduleUpdater:"+className);
+                    lbutton.setIcon(new ImageIcon(getClass().getResource("/org/iesapp/framework/icons/bubble2.png")));
+                    zone.addComponent(lbutton);
+                    lbutton.addActionListener(new ActionListener(){
+                        @Override
+                        public void actionPerformed(ActionEvent e) {
+                            String className = e.getActionCommand();
+                            if(updatersMap.containsKey(className))
+                            {
+                                updatersMap.get(className).setVisible(true);
+                            }
+                            else
+                            {
+                                String installedVersion = "";
+                              
+                                ModuleUpdaterDlg dlg = new ModuleUpdaterDlg(javar.JRDialog.getActiveFrame(), false,
+                                         installedVersion, remoteUpdater.getModulesRepo().getRepoForModule(className), currentAppClass, UIFrameworkIN.this);
+                                Point loc = lbutton.getLocationOnScreen();
+                                dlg.setLocation(loc.x, loc.y-dlg.getHeight()-5);
+                                dlg.setVisible(true);
+                                updatersMap.put(className, dlg);
+                            }
+                        }
+ 
+                    });
+                }
+           }
+       }
+       
         
        
         //create a new menubar
@@ -368,7 +418,7 @@ public class UIFrameworkIN implements UIFramework{
         
         String id = TopModuleRegistry.register(win.getClass().getName(), win);
         win.setName(id);
-        View createNewView = createNewView(win, win.getModuleDisplayName(), null, closable);
+        TopModuleView createNewView = new TopModuleView(win.getModuleDisplayName(), null, closable, locationId, win);
          
         viewMap.addView(id, createNewView);
 //        TabWindow target = tabWindowCenter;
@@ -379,10 +429,11 @@ public class UIFrameworkIN implements UIFramework{
        
         createNewView.makeVisible();
         //target.makeVisible();
-        DockingUtil.addWindow(createNewView, rootWindow);
+        //DockingUtil.addWindow(createNewView, rootWindow);
+        this.createLayoutViewMap(createNewView);
         createNewView.requestFocus();
         //Li passam el tabComponent
-        DebugLogger.getInstance().addText(this.printLayout());
+        
         return id;
     }
 
@@ -400,6 +451,9 @@ public class UIFrameworkIN implements UIFramework{
     private void setRootWindow() {
         viewMap = new StringViewMap();
         rootWindow = DockingUtil.createRootWindow(viewMap, null, true);
+        
+       // DeveloperUtil.createWindowLayoutFrame("My Main RootWindow", rootWindow).setVisible(true);
+       
 //        //Create a suitable layout center-left
 //        tabWindowCenter = new TabWindow();
 //        tabWindowCenter.getWindowProperties().setCloseEnabled(false);
@@ -409,6 +463,7 @@ public class UIFrameworkIN implements UIFramework{
         properties.addSuperObject(currentTheme.getRootWindowProperties());
         properties.getDockingWindowProperties().setDockEnabled(false);
         properties.getDockingWindowProperties().setUndockEnabled(false);
+        rootWindow.getRootWindowProperties().setRecursiveTabsEnabled(false);
         properties.getDockingWindowProperties().setCloseEnabled(false); //Disable massive close
         rootWindow.getRootWindowProperties().addSuperObject(properties);
 
@@ -434,7 +489,7 @@ public class UIFrameworkIN implements UIFramework{
                 {
                     return;
                 }
-                TopModuleWindow win = extractTopModuleWindowFromView(view1);
+                TopModuleWindow win = ((TopModuleView) view1).getTopModuleWindow();
                 
                 if (win != null) {
                     lastFocusedTopModuleWindow = win;
@@ -458,7 +513,7 @@ public class UIFrameworkIN implements UIFramework{
                     DockingWindow child = window.getChildWindow(i);
                     if (child instanceof View) {
                         View view = (View) child;
-                        TopModuleWindow win = extractTopModuleWindowFromView(view);
+                        TopModuleWindow win = ((TopModuleView) view).getTopModuleWindow();
                         if(win!=null)
                         {
                             String id = win.getName();
@@ -477,7 +532,7 @@ public class UIFrameworkIN implements UIFramework{
                 //Close the window itself
                 if (window instanceof View) {
                         View view = (View) window;
-                        TopModuleWindow win = extractTopModuleWindowFromView(view);
+                        TopModuleWindow win = ((TopModuleView) view).getTopModuleWindow();
                         if(win!=null)
                         {
                             String id = win.getName();
@@ -513,45 +568,188 @@ public class UIFrameworkIN implements UIFramework{
     mainPanel.add(rootWindow, BorderLayout.CENTER);  
     }
 
-    private View createNewView(TopModuleWindow win, String displayname, ImageIcon moduleIcon16x16, boolean closable) {
 
-        View view = new View(displayname, moduleIcon16x16, new JScrollPane(win));
-       ((DockingWindow) view).getWindowProperties().setCloseEnabled(closable);
-        return view;
+//    private TopModuleWindow extractTopModuleWindowFromView(View view) {
+//        TopModuleWindow win = null;
+//        Component component = view.getComponent();
+//        if (component instanceof JScrollPane) {
+//            Component comp = ((JScrollPane) component).getViewport().getView();
+//            if (comp instanceof TopModuleWindow) {
+//                win = (TopModuleWindow) comp;
+//            }
+//        }
+//        return win;
+//    }
+
+    private void createLayoutViewMap(TopModuleView view) {
+        
+        if(view==null || viewMap.getViewCount()<=1)
+        {
+            TabWindow tabbedWin = new TabWindow();
+            rootWindow.setWindow(tabbedWin);
+            if(view!=null)
+            {
+                tabbedWin.addTab(view);
+            }
+            return;
+        }
+        
+        
+        String displayPoint = view.getDisplayPoint();
+        if(displayPoint.equalsIgnoreCase("bar"))
+        {
+            rootWindow.getWindowBar(Direction.LEFT).addTab(view);
+            view.requestFocusInWindow();
+            return;
+        }
+        
+        //try to see if current layout already contains a view in the same displayPoint
+        //it returns its container TabWindow
+        //if TabWindow!=null No change in layout is required
+        TabWindow pointer = findTabWindow(displayPoint);
+        if(pointer!=null)
+        {
+            pointer.makeVisible();
+            pointer.addTab(view);
+            return;
+        }
+        //Layout must be updated in order to support new displayPoint
+        DockingWindow window_old = rootWindow.getWindow();
+        if(window_old==null) //something strange happened... fix it
+        {
+            TabWindow tabbedWin = new TabWindow();
+            rootWindow.setWindow(tabbedWin);
+            window_old = tabbedWin;
+        }
+        DockingWindow window_new = null;
+        if(displayPoint.equalsIgnoreCase("left") || displayPoint.equalsIgnoreCase("center"))
+        {
+            float weight = 0.66f;
+            //in some ocasions 0.66f is to much and must be set to 0.33f
+            
+            if(isSplit(window_old, true))
+            {
+                weight = 0.23f;
+            }
+            window_new = new SplitWindow(true, weight, new TabWindow(view), window_old);
+        }
+        else if(displayPoint.equalsIgnoreCase("right") )
+        {
+            float weight = 0.66f;
+            if(isSplit(window_old, true))
+            {
+                weight = 0.23f;
+            }
+            window_new = new SplitWindow(true, 0.66f, window_old, new TabWindow(view));
+        }
+        else if(displayPoint.equalsIgnoreCase("top"))
+        {
+            float weight = 0.66f;
+            if(isSplit(window_old,false))
+            {
+                weight = 0.23f;
+            }
+            window_new = new SplitWindow(false, weight, new TabWindow(view), window_old);
+        }
+        else if(displayPoint.equalsIgnoreCase("bottom"))
+        {
+            float weight = 0.66f;
+            if(isSplit(window_old,false))
+            {
+                weight = 0.23f;
+            }
+            window_new = new SplitWindow(false, weight, window_old, new TabWindow(view));
+        }
+         
+        rootWindow.setWindow(window_new);
+       
     }
 
-    private TopModuleWindow extractTopModuleWindowFromView(View view) {
-        TopModuleWindow win = null;
-        Component component = view.getComponent();
-        if (component instanceof JScrollPane) {
-            Component comp = ((JScrollPane) component).getViewport().getView();
-            if (comp instanceof TopModuleWindow) {
-                win = (TopModuleWindow) comp;
+    /**
+     * Returns the first found tabWindow containing a view with a given
+     * displayPoint. Returns null if no view with such a displayPoint exists
+     * @param displayPoint
+     * @return 
+     */
+    private TabWindow findTabWindow(String displayPoint) {
+        TabWindow tw = null;
+        for(int i=0; i<viewMap.getViewCount(); i++)
+        {
+            TopModuleView tmv = (TopModuleView) viewMap.getViewAtIndex(i);
+            String displayPoint1 = tmv.getDisplayPoint();
+            if(displayPoint1!=null && displayPoint1.equals(displayPoint))
+            {
+                Container parent = tmv.getWindowParent();
+                
+                if(parent !=null && parent instanceof TabWindow)
+                {
+                    return (TabWindow) parent;
+                }
+            }
+            
+        }
+        return tw;
+    }
+
+    /**
+     * Lookup in the layout tree splitwindows which are vertical
+     * @param dw
+     * @return 
+     */
+    private boolean isSplit(DockingWindow dw, boolean horizontal) {
+        boolean is = false;
+        if(dw == null)
+        {
+            return false;
+        }
+        
+        if (dw instanceof SplitWindow) {
+            if (((SplitWindow) dw).isHorizontal() == horizontal) {
+                return true;
             }
         }
-        return win;
+        
+        for(int i=0; i<dw.getChildWindowCount(); i++)
+        {
+                DockingWindow childWindow = dw.getChildWindow(i);
+                
+                if(childWindow instanceof SplitWindow)
+                {
+                    if(((SplitWindow) childWindow).isHorizontal() == horizontal )
+                    {
+                        return true;
+                    }
+                }
+                is = isSplit(childWindow, horizontal);
+            }
+        return is;
+    }
+ 
+
+    @Override
+    public void removeModuleUpdater(String moduleClassName) {
+        //Make it disappear from statusbar
+         StatusBarZone zone = ((StatusBarZone) jStatusBar1.getZone("third"));
+         zone.removeComponentsBy("moduleUpdater:"+moduleClassName, JLinkButton.class);
+         this.updatersMap.remove(moduleClassName);
+        
+         JOptionPane.showMessageDialog(javar.JRDialog.getActiveFrame(), 
+                 moduleClassName+"\nhas been updated.\nChanges will take place after restart.");
+         
+         //Prevent update message from appearing again for this module
+          ArrayList<String> instanceIDs = TopModuleRegistry.getCurrentInstancesOf(moduleClassName);
+          for(String id: instanceIDs)
+          {
+             TopModuleWindow win = TopModuleRegistry.findId(id);
+             win.getBeanModule().getBeanMetaINF().setVersion(remoteUpdater.getModulesRepo().getLastVersionForModule(moduleClassName));
+          }
+       
     }
 
     @Override
-    public String printLayout()
-    {
-        String printlayout = "LAYOUT: ";
-        ObjectOutputStream out = null;
-        try {
-            ByteArrayOutputStream bos = new ByteArrayOutputStream();
-            out = new ObjectOutputStream(bos);
-            rootWindow.write(out);
-            out.close();
-            return printlayout + bos.toString();
-        } catch (IOException ex) {
-            Logger.getLogger(UIFrameworkIN.class.getName()).log(Level.SEVERE, null, ex);
-        } finally {
-            try {
-                out.close();
-            } catch (IOException ex) {
-                Logger.getLogger(UIFrameworkIN.class.getName()).log(Level.SEVERE, null, ex);
-            }
-        }
-        return printlayout;
+    public void setRemoteUpdater(RemoteUpdater remoteUpdater) {
+        this.remoteUpdater = remoteUpdater;
     }
-}
+
+    
+   }

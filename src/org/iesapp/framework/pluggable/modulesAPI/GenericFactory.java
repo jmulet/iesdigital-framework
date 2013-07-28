@@ -54,6 +54,8 @@ public class GenericFactory {
     private Node nodeApp;
     private String requiredJar;
     private static final String ENCODING= "ISO-8859-1";
+    private ArrayList<BeanModule> loadModulesCache;
+    private long lastModified;
     
     public GenericFactory(InputStream inputstream, int type)
     {
@@ -84,10 +86,15 @@ public class GenericFactory {
           this.appClass = appClass;
           this.requiredModuleName = requiredModuleClass;
           this.requiredJar = requiredJar;
-          MODULESFILE = new File(CoreCfg.contextRoot+"\\config\\"+appClass.replaceAll("\\.","-")+".xml");  
-          
-            DocumentBuilderFactory f = DocumentBuilderFactory.newInstance();         
-            DocumentBuilder b = f.newDocumentBuilder();
+          MODULESFILE = new File(CoreCfg.contextRoot+File.separator+"config"+
+                  File.separator+appClass.replaceAll("\\.","-")+".xml");  
+          parseFile();
+    }
+
+    private void parseFile() throws ParserConfigurationException, SAXException, IOException
+    {
+          DocumentBuilderFactory f = DocumentBuilderFactory.newInstance();         
+          DocumentBuilder b = f.newDocumentBuilder();
  
             if(MODULESFILE.exists())
             {
@@ -97,7 +104,6 @@ public class GenericFactory {
             {
                 doc = b.newDocument();                          
             }
-            
             
             NodeList app = doc.getElementsByTagName("application");
             if(app.getLength()==0)
@@ -109,11 +115,7 @@ public class GenericFactory {
                 app = doc.getElementsByTagName("application");
             }
             nodeApp = app.item(0);
-            
-          
-         
     }
-
     
     public GenericFactory(File configfile) throws ParserConfigurationException, SAXException, IOException
     {
@@ -513,6 +515,11 @@ public class GenericFactory {
                 Node author = attributes.getNamedItem("author");
                 Node dependencies = attributes.getNamedItem("dependencies");
                 Node version = attributes.getNamedItem("version");
+                Node url = attributes.getNamedItem("url");
+                Node minFrameworkVersion = attributes.getNamedItem("minFrameworkVersion");
+                Node minClientID = attributes.getNamedItem("minClientIDVersion");
+                Node minClientSGD = attributes.getNamedItem("minClientSGDVersion");
+                
                 if(version!=null)
                 {
                      bean.getBeanMetaINF().setVersion(version.getNodeValue());
@@ -524,6 +531,22 @@ public class GenericFactory {
                 if(author!=null)
                 {
                      bean.getBeanMetaINF().setAuthor(author.getNodeValue());
+                }
+                if(url!=null)
+                {
+                    bean.getBeanMetaINF().setUrl(url.getNodeValue());
+                }
+                if(minFrameworkVersion!=null)
+                {
+                    bean.getBeanMetaINF().setMinFrameworkVersion(minFrameworkVersion.getNodeValue());
+                } 
+                if(minClientID!=null)
+                {
+                    bean.getBeanMetaINF().setMinClientID(minClientID.getNodeValue());
+                }
+                if(minClientSGD!=null)
+                {
+                    bean.getBeanMetaINF().setMinClientSGD(minClientSGD.getNodeValue());
                 }
                 
             }
@@ -590,16 +613,49 @@ public class GenericFactory {
          return list;     
      }
      
-     public ArrayList<BeanModule> loadModules()
+     public synchronized ArrayList<BeanModule> loadModulesCache()
      {
-         ArrayList<BeanModule> list = new ArrayList<BeanModule>();
+         MODULESFILE = new File(CoreCfg.contextRoot+File.separator+"config"+
+                  File.separator+appClass.replaceAll("\\.","-")+".xml");  
+         
+         if(loadModulesCache==null || MODULESFILE.lastModified()!=lastModified)
+         {
+             try {
+                 if(lastModified!=0)
+                 {
+                    parseFile();
+                 }
+                 loadModules();
+             } catch (ParserConfigurationException ex) {
+                 Logger.getLogger(GenericFactory.class.getName()).log(Level.SEVERE, null, ex);
+             } catch (SAXException ex) {
+                 Logger.getLogger(GenericFactory.class.getName()).log(Level.SEVERE, null, ex);
+             } catch (IOException ex) {
+                 Logger.getLogger(GenericFactory.class.getName()).log(Level.SEVERE, null, ex);
+             }
+            
+         }
+         return loadModulesCache;
+     }
+     /**
+      * Loaded modules are stored in cache
+      * this method overrides the cache
+      * use loadModulesCache() instead
+      * @return 
+      */
+     public synchronized ArrayList<BeanModule> loadModules()
+     {
+         loadModulesCache = new ArrayList<BeanModule>();
          NodeList nodes = getModuleNodes();
          for(int i=0; i<nodes.getLength(); i++)
          {
              BeanModule loadModule = genericLoader(nodes.item(i), MODULE);
-             list.add(loadModule);  
+             loadModulesCache.add(loadModule);  
          }
-         return list;
+         MODULESFILE = new File(CoreCfg.contextRoot+File.separator+"config"+
+                  File.separator+appClass.replaceAll("\\.","-")+".xml");  
+         lastModified = MODULESFILE.lastModified();
+         return loadModulesCache;
      }
      
      
@@ -746,6 +802,14 @@ public class GenericFactory {
                         escape(bip.getBeanMetaINF().getVersion()));
             createElement.setAttribute("dependencies",
                         escape(bip.getBeanMetaINF().getDependencies()));
+            createElement.setAttribute("url",
+                        escape(bip.getBeanMetaINF().getUrl()));
+            createElement.setAttribute("minFrameworkVersion",
+                        escape(bip.getBeanMetaINF().getMinFrameworkVersion()));
+            createElement.setAttribute("minClientIDVersion",
+                        escape(bip.getBeanMetaINF().getMinClientID()));
+            createElement.setAttribute("minClientSGDVersion",
+                        escape(bip.getBeanMetaINF().getMinClientSGD()));
             module.appendChild(createElement);
         
 
@@ -899,27 +963,35 @@ public class GenericFactory {
         return currentModuleClass;
     }
 
-    public void setCurrentModuleClass(String currentModuleClass) {
+    public boolean setCurrentModuleClass(String currentModuleClass) {
         this.currentModuleClass = currentModuleClass;
         this.currentModuleNode = getModuleNode(this.currentModuleClass);
+        return currentModuleNode!=null; 
     }
 
     public String getCurrentPluginClass() {
         return currentPluginClass;
     }
 
-    public void setCurrentPluginClass(String currentPluginClass) {
+    public boolean setCurrentPluginClass(String currentPluginClass) {
         this.currentPluginClass = currentPluginClass;
         Node from = getCustomModuleNode("plugins");
         this.currentPluginNode = getNodeByClass(from, "plugin", "class", currentPluginClass);
+        return currentPluginNode!=null;
     }
 
     public void setModuleAttribute(String attName, String attValue) {
-        ((Element) currentModuleNode).setAttribute(attName, attValue);
+        if(currentModuleNode!=null)
+        {
+          ((Element) currentModuleNode).setAttribute(attName, attValue);
+        }
     }
 
     public void setPluginAttribute(String attName, String attValue) {
-        ((Element) currentPluginNode).setAttribute(attName, attValue);
+        if(currentPluginNode!=null)
+        {
+            ((Element) currentPluginNode).setAttribute(attName, attValue);
+        }
     }
 
     public void setModuleInitializationAttribute(String key, String value) {
@@ -974,7 +1046,7 @@ public class GenericFactory {
         }
         try {
             //We first need to add to classpath
-            org.iesapp.framework.util.JarClassLoader.getInstance().addJarToClasspath(new File(CoreCfg.contextRoot+"\\modules\\"+requiredJar));
+            org.iesapp.framework.util.JarClassLoader.getInstance().addToClasspath(new File(CoreCfg.contextRoot+"\\modules\\"+requiredJar));
            
             Class<?> forName = Class.forName(requiredModuleName, false, org.iesapp.framework.util.JarClassLoader.getInstance());
             URL location = forName.getProtectionDomain().getCodeSource().getLocation();
@@ -1016,13 +1088,23 @@ public class GenericFactory {
     }
 
     public void setModuleMetaINF(String key, String value) {
-        Node customModuleNode = this.getCustomModuleNode("metaINF");
-        ((Element) customModuleNode).setAttribute(key, value);
+        if(currentModuleNode!=null)
+        {
+            Node customModuleNode = this.getCustomModuleNode("metaINF");
+            if(customModuleNode!=null)
+            {
+                ((Element) customModuleNode).setAttribute(key, value);
+            }
+        }
     }
 
     public void setPluginMetaINF(String key, String value) {
-         Node customModuleNode = this.getCustomPluginNode("metaINF");
-        ((Element) customModuleNode).setAttribute(key, value);
+        if (currentPluginNode != null) {
+            Node customModuleNode = this.getCustomPluginNode("metaINF");
+            if (customModuleNode != null) {
+                ((Element) customModuleNode).setAttribute(key, value);
+            }
+        }
     }
 
     public void removeModuleClass(String moduleClassName) {

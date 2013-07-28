@@ -10,34 +10,31 @@ package org.iesapp.framework.table;
  * @author Josep
 */
 import java.awt.Component;
+import javax.swing.Icon;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JLabel;
 import javax.swing.JTable;
-import javax.swing.JToolTip;
 import javax.swing.table.DefaultTableCellRenderer;
 
 public class MyIconButtonRenderer extends DefaultTableCellRenderer {
 
-   public MyIconButtonRenderer(String[] items, String[] resources) {
+    
+  private String[] opcions;
+  private Icon[] icons;
+  private int mode;
+
+   public MyIconButtonRenderer(String[] items, Icon[] icons) {
        mode = 1;
        opcions = items;
-       icons = new ImageIcon[items.length];
-       for(int i=0; i<items.length; i++)
-       {
-            icons[i] = new ImageIcon(getClass().getResource(resources[i]));
-       }
+       this.icons = icons;
 
     }
 
-   public MyIconButtonRenderer(String[] resources) {
+   public MyIconButtonRenderer(Icon[] icons) {
        mode = 2;
-       icons = new ImageIcon[resources.length];
-       for(int i=0; i<resources.length; i++)
-       {
-            icons[i] = new ImageIcon(getClass().getResource(resources[i]));
-       }
-        
+       this.icons = icons;
+       
    }
 
   @Override
@@ -126,9 +123,5 @@ public class MyIconButtonRenderer extends DefaultTableCellRenderer {
 //  public static Color cfg_colorGuardies;
 //  public static Color cfg_colorParell;
 //  public static Color cfg_colorSenar;
-
-  private String[] opcions;
-  private ImageIcon[] icons;
-  private int mode;
 
 }

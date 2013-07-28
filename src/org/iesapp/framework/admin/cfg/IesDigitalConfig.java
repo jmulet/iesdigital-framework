@@ -23,21 +23,22 @@ import org.iesapp.framework.util.CoreCfg;
  *
  * @author Josep
  */
-public class SgdConfig extends javar.JRDialog {
+public class IesDigitalConfig extends javar.JRDialog {
     private final CoreCfg coreCfg;
 
     /** Creates new form MissatgesCfg */
-    public SgdConfig(java.awt.Frame par, boolean modal, CoreCfg coreCfg) {
+    public IesDigitalConfig(java.awt.Frame par, boolean modal, CoreCfg coreCfg) {
         super(par, modal);
         this.coreCfg = coreCfg;
         initComponents();
         jButton4.setEnabled(false);
 
-        jTextField1.setText((String) CoreCfg.configTableMap.get("sgdHost"));
-        jTextField2.setText((String) CoreCfg.configTableMap.get("sgdDBPrefix"));
-        jTextField3.setText((String) CoreCfg.configTableMap.get("sgdUser"));
-        jParams.setText((String) CoreCfg.configTableMap.get("sgdDBParams"));
-        jPasswordField1.setText(CoreCfg.coreDB_sgdPasswd);
+        
+        jTextField6.setText(CoreCfg.core_mysqlHost);
+        jTextField3.setText(CoreCfg.core_mysqlUser);
+        jTextField6.setText(CoreCfg.core_mysqlDBPrefix);
+        jPasswordField1.setText(CoreCfg.core_mysqlPasswd);
+        jParams.setText(CoreCfg.coreDB_mysqlParam);
     }
 
     /** This method is called from within the constructor to
@@ -55,8 +56,8 @@ public class SgdConfig extends javar.JRDialog {
         jLabel4 = new javax.swing.JLabel();
         jLabel5 = new javax.swing.JLabel();
         jLabel6 = new javax.swing.JLabel();
-        jTextField1 = new javax.swing.JTextField();
         jTextField2 = new javax.swing.JTextField();
+        jTextField6 = new javax.swing.JTextField();
         jTextField3 = new javax.swing.JTextField();
         jPasswordField1 = new javax.swing.JPasswordField();
         jPanel1 = new javax.swing.JPanel();
@@ -69,14 +70,13 @@ public class SgdConfig extends javar.JRDialog {
         jButton3 = new javax.swing.JButton();
         jButton2 = new javax.swing.JButton();
 
-        setTitle("Configuració: SGD");
+        setTitle("Configuració: IESDIGITAL");
 
         jLabel1.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
-        java.util.ResourceBundle bundle = java.util.ResourceBundle.getBundle("org/iesapp/framework/admin/cfg/bundle"); // NOI18N
-        jLabel1.setText(bundle.getString("sgdconfig")); // NOI18N
+        jLabel1.setText("IESDIGITAL Client Configuration");
         jLabel1.setName("jLabel1"); // NOI18N
 
-        jLabel2.setText(bundle.getString("sgdconfig2")); // NOI18N
+        jLabel2.setText("Connection with IESDIGITAL server is required");
         jLabel2.setName("jLabel2"); // NOI18N
 
         jLabel3.setText("Host");
@@ -91,9 +91,9 @@ public class SgdConfig extends javar.JRDialog {
         jLabel6.setText("Password");
         jLabel6.setName("jLabel6"); // NOI18N
 
-        jTextField1.setName("jTextField1"); // NOI18N
-
         jTextField2.setName("jTextField2"); // NOI18N
+
+        jTextField6.setName("jTextField6"); // NOI18N
 
         jTextField3.setName("jTextField3"); // NOI18N
 
@@ -128,6 +128,7 @@ public class SgdConfig extends javar.JRDialog {
 
         jPanel2.setName("jPanel2"); // NOI18N
 
+        java.util.ResourceBundle bundle = java.util.ResourceBundle.getBundle("org/iesapp/framework/admin/cfg/bundle"); // NOI18N
         jButton1.setText(bundle.getString("cancel")); // NOI18N
         jButton1.setName("jButton1"); // NOI18N
         jButton1.addActionListener(new java.awt.event.ActionListener() {
@@ -184,8 +185,8 @@ public class SgdConfig extends javar.JRDialog {
                     .addComponent(jPasswordField1)
                     .addComponent(jLabel1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addComponent(jLabel2, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(jTextField1)
                     .addComponent(jTextField2)
+                    .addComponent(jTextField6)
                     .addComponent(jTextField3)
                     .addComponent(jParams))
                 .addGap(19, 19, 19))
@@ -207,11 +208,11 @@ public class SgdConfig extends javar.JRDialog {
                 .addGap(5, 5, 5)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(jLabel3)
-                    .addComponent(jTextField1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addComponent(jTextField2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addGap(6, 6, 6)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(jLabel4)
-                    .addComponent(jTextField2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addComponent(jTextField6, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addGap(6, 6, 6)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(jLabel5)
@@ -240,19 +241,13 @@ public class SgdConfig extends javar.JRDialog {
 
     //ACCEPTA
     private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton2ActionPerformed
-
-        CoreCfg.coreDB_sgdHost = jTextField1.getText();
-        CoreCfg.coreDB_sgdDB = jTextField2.getText() + CoreCfg.configTableMap.get("anyIniciCurs");
-        CoreCfg.coreDB_sgdUser = jTextField3.getText();
-        CoreCfg.coreDB_sgdPasswd= new String(jPasswordField1.getPassword());
-        
-        //Desa dins del mapa
-        CoreCfg.configTableMap.put("sgdHost",jTextField1.getText());
-        CoreCfg.configTableMap.put("sgdDBPrefix",jTextField2.getText());
-        CoreCfg.configTableMap.put("sgdUser",jTextField3.getText());
-        CoreCfg.configTableMap.put("sgdPasswd",new String(jPasswordField1.getPassword()));
-        CoreCfg.configTableMap.put("sgdDBParams", jParams.getText().trim());
-        coreCfg.updateDatabaseCfg();
+    
+        CoreCfg.core_mysqlHost = jTextField2.getText();
+        CoreCfg.core_mysqlDBPrefix = jTextField6.getText();
+        CoreCfg.core_mysqlUser= jTextField3.getText();
+        CoreCfg.core_mysqlPasswd =new String(jPasswordField1.getPassword());
+        CoreCfg.coreDB_mysqlParam = jParams.getText().trim();
+        CoreCfg.saveEncryptedFile(); 
 
         boolean q = MyDatabase.tryConnection(CoreCfg.coreDB_sgdHost, CoreCfg.coreDB_sgdDB, 
                 CoreCfg.coreDB_sgdUser, CoreCfg.coreDB_sgdPasswd, CoreCfg.coreDB_sgdParam, false);
@@ -266,8 +261,8 @@ public class SgdConfig extends javar.JRDialog {
 
     //Intenta
     private void jButton3ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton3ActionPerformed
-        String sgdHost = jTextField1.getText();
-        String sgdDB = jTextField2.getText()+ CoreCfg.configTableMap.get("anyIniciCurs");
+        String sgdHost = jTextField2.getText();
+        String sgdDB = jTextField6.getText()+ CoreCfg.configTableMap.get("anyIniciCurs");
         String sgdUser = jTextField3.getText();
         String sgdPasswd= new String(jPasswordField1.getPassword());
         String param = jParams.getText().trim();
@@ -283,10 +278,10 @@ public class SgdConfig extends javar.JRDialog {
     private void jButton4ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton4ActionPerformed
         this.setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
         DBCheckResultDlg dlg = new DBCheckResultDlg(javar.JRDialog.getActiveFrame(),true,coreCfg,
-                coreCfg.anyAcademic, DBCheckResultDlg.CHECK_SGD);
+                coreCfg.anyAcademic, DBCheckResultDlg.CHECK_IESDIGITAL);
         if(dlg.isFixed())
         {
-            JOptionPane.showMessageDialog(this, "SGD client integrity check passed!");
+            JOptionPane.showMessageDialog(this, "IESDIGITAL client integrity check passed!");
         }
     }//GEN-LAST:event_jButton4ActionPerformed
 
@@ -313,9 +308,9 @@ public class SgdConfig extends javar.JRDialog {
     private javax.swing.JPanel jPanel2;
     private javax.swing.JTextField jParams;
     private javax.swing.JPasswordField jPasswordField1;
-    private javax.swing.JTextField jTextField1;
     private javax.swing.JTextField jTextField2;
     private javax.swing.JTextField jTextField3;
+    private javax.swing.JTextField jTextField6;
     // End of variables declaration//GEN-END:variables
     public boolean Ok;
   

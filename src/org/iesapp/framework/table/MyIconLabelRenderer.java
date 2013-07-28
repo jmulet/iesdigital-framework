@@ -11,7 +11,7 @@ package org.iesapp.framework.table;
 */
 import java.awt.Component;
 import java.util.ArrayList;
-import javax.swing.ImageIcon;
+import javax.swing.Icon;
 import javax.swing.JLabel;
 import javax.swing.JTable;
 import javax.swing.table.DefaultTableCellRenderer;
@@ -24,7 +24,7 @@ import javax.swing.table.DefaultTableCellRenderer;
 
 public class MyIconLabelRenderer extends DefaultTableCellRenderer {
   private String[] opcions;
-  private ImageIcon[] icons;
+  private Icon[] icons;
   private int mode;
   protected java.awt.Color highLightColor;
   protected ArrayList<Integer> rows;
@@ -33,25 +33,15 @@ public class MyIconLabelRenderer extends DefaultTableCellRenderer {
        mode = 0;
     }
     
-   public MyIconLabelRenderer(String[] items, String[] resources) {
+   public MyIconLabelRenderer(String[] items, Icon[] icons) {
        mode = 1;
        opcions = items;
-       icons = new ImageIcon[items.length];
-       for(int i=0; i<items.length; i++)
-       {
-            icons[i] = new ImageIcon(getClass().getResource(resources[i]));
-       }
-
+       this.icons = icons;
     }
 
-   public MyIconLabelRenderer(String[] resources) {
+   public MyIconLabelRenderer(Icon[] icons) {
        mode = 2;
-       icons = new ImageIcon[resources.length];
-       for(int i=0; i<resources.length; i++)
-       {
-            icons[i] = new ImageIcon(getClass().getResource(resources[i]));
-       }
-        
+       this.icons = icons;        
    }
 
   @Override

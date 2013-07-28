@@ -13,6 +13,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
+import javax.swing.Icon;
 import javax.swing.ImageIcon;
 import javax.swing.JFileChooser;
 import javax.swing.JOptionPane;
@@ -155,8 +156,11 @@ public class PluginManager extends javar.JRDialog {
         );
         jTable1.setModel(modelTable1);
         jTable1.setRowHeight(32);
-        String[] icons = new String[]{"/org/iesapp/framework/icons/redspot.gif","/org/iesapp/framework/icons/greenspot.gif"};
-        String[] icons2 = new String[]{"/org/iesapp/framework/icons/delete.gif"};
+        Icon[] icons = new Icon[]{
+            new ImageIcon(getClass().getResource("/iesapp/core/icons/redspot.gif")),
+            new ImageIcon(getClass().getResource("/iesapp/core/icons/greenspot.gif"))};
+        Icon[] icons2 = new Icon[]{
+            new ImageIcon(getClass().getResource("/iesapp/core/icons/delete.gif"))};
 
         jTable1.getColumnModel().getColumn(0).setCellRenderer(new MyIconLabelRenderer(icons2));
         jTable1.getColumnModel().getColumn(1).setCellRenderer(new MyIconLabelRenderer(icons));

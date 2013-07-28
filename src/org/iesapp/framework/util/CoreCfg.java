@@ -853,7 +853,7 @@ public class CoreCfg extends org.iesapp.clients.iesdigital.ICoreData{
                 File file = new File(CoreCfg.contextRoot+File.separator+"modules"+File.separator+"org-iesapp-modules-helpset.jar");
                 //System.out.println("File added is file->"+file);
                 
-                systemClassLoader.addJarToClasspath(file);
+                systemClassLoader.addToClasspath(file);
                 URL url = HelpSet.findHelpSet(systemClassLoader, "org/iesapp/modules/help/module.hs", Locale.getDefault());
                 //URL url = systemClassLoader.getResource("org/iesapp/modules/help/module.hs");
                // URL url = mainHelpSet.findmainHelpSet(systemClassLoader, "/org/iesapp/modules/reserves/help/module.hs");

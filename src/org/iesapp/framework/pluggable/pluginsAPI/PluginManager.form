@@ -11,6 +11,7 @@
   </Properties>
   <SyntheticProperties>
     <SyntheticProperty name="formSizePolicy" type="int" value="1"/>
+    <SyntheticProperty name="generateCenter" type="boolean" value="false"/>
   </SyntheticProperties>
   <Events>
     <EventHandler event="windowClosing" listener="java.awt.event.WindowListener" parameters="java.awt.event.WindowEvent" handler="formWindowClosing"/>
@@ -87,7 +88,7 @@
                   </Events>
                   <AuxValues>
                     <AuxValue name="JavaCodeGenerator_CreateCodeCustom" type="java.lang.String" value="new javax.swing.JTable(){&#xa;    public boolean isCellEditable(int row, int col)&#xa;    {&#xa;        return false;&#xa;    }&#xa;}"/>
-                    <AuxValue name="JavaCodeGenerator_InitCodePost" type="java.lang.String" value="jTable1.setRowHeight(32);&#xa;String[] icons = new String[]{&quot;/iesapp/core/icons/redspot.gif&quot;,&quot;/iesapp/core/icons/greenspot.gif&quot;};&#xa;String[] icons2 = new String[]{&quot;/iesapp/core/icons/delete.gif&quot;};&#xa;&#xa;jTable1.getColumnModel().getColumn(0).setCellRenderer(new MyIconLabelRenderer(icons2));&#xa;jTable1.getColumnModel().getColumn(1).setCellRenderer(new MyIconLabelRenderer(icons));"/>
+                    <AuxValue name="JavaCodeGenerator_InitCodePost" type="java.lang.String" value="jTable1.setRowHeight(32);&#xa;Icon[] icons = new Icon[]{&#xa;new ImageIcon(getClass().getResource(&quot;/iesapp/core/icons/redspot.gif&quot;)),&#xa;new ImageIcon(getClass().getResource(&quot;/iesapp/core/icons/greenspot.gif&quot;))};&#xa;Icon[] icons2 = new Icon[]{&#xa;new ImageIcon(getClass().getResource(&quot;/iesapp/core/icons/delete.gif&quot;))};&#xa;&#xa;jTable1.getColumnModel().getColumn(0).setCellRenderer(new MyIconLabelRenderer(icons2));&#xa;jTable1.getColumnModel().getColumn(1).setCellRenderer(new MyIconLabelRenderer(icons));"/>
                     <AuxValue name="JavaCodeGenerator_InitCodePre" type="java.lang.String" value="modelTable1 = new javax.swing.table.DefaultTableModel(&#xa;    new Object [][] {&#xa;    },&#xa;    new String [] {&#xa;        &quot;&quot;,&quot;Activaci&#xf3;&quot;, &quot;Plugin&quot;, &quot;Disponible per a roles&quot;&#xa;    }&#xa;);"/>
                   </AuxValues>
                 </Component>

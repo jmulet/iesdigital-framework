@@ -5,6 +5,7 @@
 package org.iesapp.framework.pluggable;
 
 import java.awt.Component;
+import java.awt.Container;
 import javax.swing.JScrollPane;
 
 /**
@@ -34,6 +35,43 @@ public class StatusBarZone extends JScrollPane {
         jPanel1.revalidate();
         jPanel1.repaint();
     }
+    
+    /**
+     * Remove all components with specified name and componentClass
+     * @param name if null, remove all components of class type componentClass
+      * @param componentClass if null, remove all components of given component name
+      * if both null, it is an alias of clear
+     */
+    public void removeComponentsBy(String name, Class<?> componentClass) {
+        if(name==null && componentClass==null)
+        {
+            this.clear();
+            return;
+        }
+        else
+        {
+            removeWithin(jPanel1, name, componentClass);  //DO A RECURSIVE SEARCH
+        }
+        jPanel1.revalidate();
+        jPanel1.repaint();
+    }
+
+    private void removeWithin(Container holder, String name, Class<?> componentClass)
+    {
+            for(Component comp: holder.getComponents())
+            {
+                if( (name==null  || name.equals(comp.getName()) ) && 
+                    (componentClass==null || componentClass.equals(comp.getClass()) ))
+                {
+                    jPanel1.remove(comp);
+                }
+                else if(comp instanceof Container)
+                {
+                    removeWithin((Container) comp, name, componentClass);
+                }
+            }
+    }
+    
     /**
      * This method is called from within the constructor to initialize the form.
      * WARNING: Do NOT modify this code. The content of this method is always
@@ -57,4 +95,6 @@ public class StatusBarZone extends JScrollPane {
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JPanel jPanel1;
     // End of variables declaration//GEN-END:variables
+
+    
 }

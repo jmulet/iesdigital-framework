@@ -59,10 +59,11 @@ public class TopModuleWindow extends javax.swing.JPanel implements Lookup.Provid
     public static InstanceContent globalContent = null;
     protected InstanceContent content;
     protected AbstractLookup moduleLookup;
+    protected JarClassLoader moduleClassLoader;
     public IniParameters iniParameters = new IniParameters();
     protected BeanModule beanModule;
-    protected ImageIcon PLUGIN_ICON =
-            new ImageIcon(TopModuleWindow.class.getResource("/org/iesapp/framework/icons/plugin.gif"));
+    protected ImageIcon PLUGIN_ICON
+            = new ImageIcon(TopModuleWindow.class.getResource("/org/iesapp/framework/icons/plugin.gif"));
     private boolean firstCall = true;
     //Provides back control on UIFramework
     protected UIFramework uiFramework;
@@ -150,7 +151,6 @@ public class TopModuleWindow extends javax.swing.JPanel implements Lookup.Provid
         }
         this.stray = stray;
 
-
         helpSetInitialization();
         postInitialize();
         loadPlugins();
@@ -182,8 +182,12 @@ public class TopModuleWindow extends javax.swing.JPanel implements Lookup.Provid
         this.stamper = stamper;
     }
 
+    /**
+     * Override this method to perform custom dispose operations
+     * 
+     **/
     public void beforeDispose() {
-        //Overide
+       //Override
     }
 
     public void dispose() {
@@ -197,6 +201,9 @@ public class TopModuleWindow extends javax.swing.JPanel implements Lookup.Provid
         if (moduleHelpSet != null) {
             coreCfg.getMainHelpSet().remove(moduleHelpSet);
         }
+        
+        //null point classLoader
+        moduleClassLoader = null;
     }
 
     public void setModuleName(String moduleName) {
@@ -296,9 +303,10 @@ public class TopModuleWindow extends javax.swing.JPanel implements Lookup.Provid
                 if (idx >= 0) {
                     BeanModule beanPlugin = getBeanModule().getInstalledPlugins().get(idx);
                     //Do the magic here, create an instance and render the plugin to the correct location   
-                    org.iesapp.framework.util.JarClassLoader.getInstance().addJarToClasspath(new java.io.File(CoreCfg.contextRoot + "\\modules\\" + beanPlugin.getJar()));
+                    org.iesapp.framework.util.JarClassLoader.getInstance().addToClasspath(new java.io.File(CoreCfg.contextRoot + "\\modules\\" + beanPlugin.getJar()));
                     try {
-                        Class<?> forName = Class.forName(beanPlugin.getClassName());
+                        
+                        Class<?> forName = moduleClassLoader.loadClass(beanPlugin.getClassName());
                         TopPluginWindow plgWin = (TopPluginWindow) forName.newInstance();
                         plgWin.setBeanPlugin(beanPlugin);
                         plgWin.setInitializationObject(initializationObject);
@@ -380,14 +388,10 @@ public class TopModuleWindow extends javax.swing.JPanel implements Lookup.Provid
                         //System.out.println("Unsupported anchor point");
                     }
 
-
                 }
             }
 
-
         }
-
-
 
     }
 
@@ -411,7 +415,6 @@ public class TopModuleWindow extends javax.swing.JPanel implements Lookup.Provid
         //System.out.println("########################################");
         //System.out.println("LOADING PLUGINS for module....."+getBeanModule().getClassName()+"..."+getBeanModule().getInstalledPlugins().size()+" n. de plugins");
         //System.out.println("########################################");
-
         for (int i = 0; i < getBeanModule().getInstalledPlugins().size(); i++) {
             BeanModule plg = getBeanModule().getInstalledPlugins().get(i);
             //System.out.println("PLG is "+plg.getClassName());
@@ -419,7 +422,6 @@ public class TopModuleWindow extends javax.swing.JPanel implements Lookup.Provid
                 //System.out.println(" Skip "+plg.getClassName()+" because disabled");
                 continue;
             }
-
 
             boolean mustskip = DockingFrameworkApp.pluginLoadPref.equalsIgnoreCase("no");
             if (mustskip) {
@@ -430,10 +432,10 @@ public class TopModuleWindow extends javax.swing.JPanel implements Lookup.Provid
 
             //Adds to classpath module jar
             File jarfile = new File(CoreCfg.contextRoot + "\\modules\\" + plg.getJar());
-            org.iesapp.framework.util.JarClassLoader.getInstance().addJarToClasspath(jarfile);
+            org.iesapp.framework.util.JarClassLoader.getInstance().addToClasspath(jarfile);
             //Adds to classpath any other required lib for this module
             for (String s : plg.getRequiredLibs()) {
-                org.iesapp.framework.util.JarClassLoader.getInstance().addJarToClasspath(new File(CoreCfg.contextRoot + "\\" + s));
+                org.iesapp.framework.util.JarClassLoader.getInstance().addToClasspath(new File(CoreCfg.contextRoot + "\\" + s));
             }
 
         }
@@ -488,13 +490,12 @@ public class TopModuleWindow extends javax.swing.JPanel implements Lookup.Provid
                 String path = "";
                 if (beanModule.getHelpSetJar() != null && beanModule.getHelpSet() != null) {
                     File file = new File(CoreCfg.contextRoot + File.separator + "modules" + File.separator + beanModule.getHelpSetJar());
-                    systemClassLoader.addJarToClasspath(file);
+                    systemClassLoader.addToClasspath(file);
                     path = beanModule.getHelpSet();
                 } else {
                     path = StringUtils.BeforeLast(this.getBeanModule().getClassName(), ".");
                     path = path.replaceAll("\\.", "/") + "/help/module.hs";
                 }
-
 
                 //System.out.println("PATH->"+path);
                 //URL url = systemClassLoader.getResource(path);
@@ -552,6 +553,14 @@ public class TopModuleWindow extends javax.swing.JPanel implements Lookup.Provid
 
     public ArrayList<UserPreferencesBean> getUserModulePreferences() {
         return userModulePreferences;
+    }
+
+    public JarClassLoader getModuleClassLoader() {
+        return moduleClassLoader;
+    }
+
+    public void setModuleClassLoader(JarClassLoader moduleClassLoader) {
+        this.moduleClassLoader = moduleClassLoader;
     }
 
 }

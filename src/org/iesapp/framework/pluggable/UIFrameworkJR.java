@@ -4,10 +4,12 @@
  */
 package org.iesapp.framework.pluggable;
 
+import com.l2fprod.common.swing.JLinkButton;
 import com.l2fprod.common.swing.StatusBar;
 import java.awt.Component;
-import java.awt.Rectangle;
 import java.awt.event.ActionEvent;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.io.File;
@@ -16,9 +18,9 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import javar.JRCustomTab;
 import javar.JRTabbedPane;
 import javar.JRTabbedPaneStation;
+import javax.swing.ImageIcon;
 import javax.swing.JFrame;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
@@ -31,6 +33,9 @@ import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import org.iesapp.framework.pluggable.modulesAPI.BeanModule;
 import org.iesapp.framework.util.CoreCfg;
+import org.iesapp.updater.RemoteRepository;
+import org.iesapp.updater.RemoteUpdater;
+import org.iesapp.util.StringUtils;
 import org.jdesktop.swingx.MultiSplitLayout.Divider;
 import org.jdesktop.swingx.MultiSplitLayout.Leaf;
 import org.jdesktop.swingx.MultiSplitLayout.Node;
@@ -68,6 +73,7 @@ public class UIFrameworkJR implements UIFramework{
     private Leaf bottom;
     private Split modelRoot;
     private Split centralSplits;
+    private RemoteRepository repository;
 
     
  
@@ -82,7 +88,7 @@ public class UIFrameworkJR implements UIFramework{
     
     @Override
     public void initialize(final WindowManager windowManager, final String appDisplayName,
-                        final ArrayList<JMenu> beforeMenu, final ArrayList<JMenu> afterMenu ) {
+                        final ArrayList<JMenu> beforeMenu, final ArrayList<JMenu> afterMenu, final String currentAppName ) {
         this.windowManager = windowManager;
         this.frame = windowManager.getFrame();
         this.beforeMenu = beforeMenu;
@@ -91,6 +97,7 @@ public class UIFrameworkJR implements UIFramework{
         this.jStatusBar1 = windowManager.getjStatusBar1();
         this.appDisplayName = appDisplayName;
         this.mainPanel = windowManager.getMainPanel();
+       
         station = new JRTabbedPaneStation();
         station.addPropertyChangeListener(new PropertyChangeListener(){
 
@@ -202,11 +209,11 @@ public class UIFrameworkJR implements UIFramework{
             {
                 DebugLogger.getInstance().addText("CREATING::::");
                 //ModuleClassLoader moduleClassLoader = new ModuleClassLoader(ClassLoader.getSystemClassLoader());
-                org.iesapp.framework.util.JarClassLoader.getInstance().addJarToClasspath(new File(CoreCfg.contextRoot+"\\modules\\"+module.getJar() ));
+                org.iesapp.framework.util.JarClassLoader.getInstance().addToClasspath(new File(CoreCfg.contextRoot+"\\modules\\"+module.getJar() ));
                 //Include any other required lib
                 //Adds to classpath any other required lib for this module
                 for (String s : module.getRequiredLibs()) {
-                    org.iesapp.framework.util.JarClassLoader.getInstance().addJarToClasspath(new File(CoreCfg.contextRoot + "\\" + s));
+                    org.iesapp.framework.util.JarClassLoader.getInstance().addToClasspath(new File(CoreCfg.contextRoot + "\\" + s));
                 }
                 DebugLogger.getInstance().addText("Trying to find class for module :: "+module.getClassName());
                 Class<?> forName = Class.forName(module.getClassName());
@@ -327,8 +334,32 @@ public class UIFrameworkJR implements UIFramework{
 //        pos = WindowManager.findMenuItemPos(menuBar, "jMenuAjuda");
 //        JMenu jMenuAjuda = menuBar.getMenu(pos);
 //        
-       ((StatusBarZone) jStatusBar1.getZone("third")).clear();
+        StatusBarZone zone = ((StatusBarZone) jStatusBar1.getZone("third"));
+        zone.clear();
         
+       //Add information about module versioning (if available)
+       if(repository!=null  && win!= null)
+       {
+           BeanModule beanModule = win.getBeanModule();
+           if(beanModule!=null)
+           {
+                String className = StringUtils.noNull(beanModule.getClassName());
+                String lastVersionForModule = repository.getLastVersionForModule(className);
+                if(StringUtils.compare(lastVersionForModule, beanModule.getBeanMetaINF().getVersion())>0)
+                {
+                    JLinkButton lbutton = new JLinkButton("New "+win.moduleDisplayName+" "+ lastVersionForModule);
+                    lbutton.setIcon(new ImageIcon(getClass().getResource("/org/iesapp/framework/icons/bubble1.png")));
+                    zone.addComponent(lbutton);
+                    lbutton.addMouseListener(new MouseAdapter(){
+                        
+                        @Override
+                        public void mouseClicked(MouseEvent e) {
+                            System.out.println("DO something");
+                        }
+                    });
+                }
+           }
+       }
        
         //create a new menubar
         JMenuBar jMenuBar2 = new JMenuBar();
@@ -577,10 +608,16 @@ public class UIFrameworkJR implements UIFramework{
         List children2 = Arrays.asList(new Node[]{left, new Divider(), center, new Divider(), right});
         centralSplits.setChildren(children2);
     }
+ 
 
     @Override
-    public String printLayout() {
-        throw new UnsupportedOperationException("Not supported yet.");
+    public void removeModuleUpdater(String moduleClassName) {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 
+    @Override
+    public void setRemoteUpdater(RemoteUpdater remoteUpdater) {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+ 
 }

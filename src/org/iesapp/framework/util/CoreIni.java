@@ -32,11 +32,13 @@ public class CoreIni {
     protected boolean core_anuncisOnStartup = false;
     protected boolean core_accessBlocked = false;
     protected String  core_PRODUCTID = "DEFAULT";
-    protected String  core_sgdClientJar = "";
-    protected String  core_iesdigitalClientJar = "";
+    protected String  core_sgdClientJar = "modules/org-iesapp-clients-sgd7.01.0065.jar";
+    protected String  core_iesdigitalClientJar = "modules/org-iesapp-clients-iesdigital4.5.jar";
+    protected static String core_repoURLs = "https://raw.github.com/jmulet/iesdigital/master/";
     protected String  contextRoot = "";
     protected String  core_lang = "ca";
     private static CoreIni instance = null;
+    private final Properties props;
 
     private CoreIni(final String[] args, final Closable closable) {
 
@@ -68,7 +70,7 @@ public class CoreIni {
             saveCoreIni();
         }
 
-        Properties props = new Properties();
+        props = new Properties();
         //try retrieve data from file
         try {
             FileInputStream filestream = new FileInputStream(contextRoot+File.separator+COREINI);
@@ -82,10 +84,12 @@ public class CoreIni {
 
             core_PRODUCTID = props.getProperty("core.productID", "");
 
-            core_sgdClientJar = props.getProperty("core.sgdClientJar", "modules/sgd7.jar");
-            core_iesdigitalClientJar = props.getProperty("core.iesdigitalClientJar", "modules/iesdigitalclient.jar");
+            core_sgdClientJar = props.getProperty("core.sgdClientJar", "modules/org-iesapp-clients-sgd7.01.0065.jar");
+            core_iesdigitalClientJar = props.getProperty("core.iesdigitalClientJar", "modules/org-iesapp-clients-iesdigital4.5.jar");
 
-            props.getProperty("core.lang", Locale.getDefault().getLanguage());
+            core_lang = props.getProperty("core.lang", Locale.getDefault().getLanguage());
+            
+            core_repoURLs = props.getProperty("core.repoURLs","https://raw.github.com/jmulet/iesdigital/master/" );
             filestream.close();
         } catch (IOException e) {
             Logger.getLogger(CoreCfg.class.getName()).log(Level.SEVERE, null, e);
@@ -107,8 +111,8 @@ public class CoreIni {
             closable.quitApp();
         }        
         //System.out.println("cccc");
-        JarClassLoader.getInstance().addJarToClasspath(file1);
-        JarClassLoader.getInstance().addJarToClasspath(file2);
+        JarClassLoader.getInstance().addToClasspath(file1);
+        JarClassLoader.getInstance().addToClasspath(file2);
         //System.out.println("ddd");
         
         //Now CoreCfg is accesible for static members since libs are loaded
@@ -121,7 +125,7 @@ public class CoreIni {
          
     }
 
-    private void saveCoreIni() {
+    public void saveCoreIni() {
 
         Properties props = new Properties();
         try {
@@ -129,8 +133,9 @@ public class CoreIni {
             props.setProperty("core.anuncisOnStartup", core_anuncisOnStartup ? "1" : "0");
             props.setProperty("core.productID", core_PRODUCTID);
             props.setProperty("core.lang", core_lang);
-            props.setProperty("core.sgdClientJar", "modules/org-iesapp-clients-sgd7.jar");
-            props.setProperty("core.iesdigitalClientJar", "modules/org-iesapp-clients-iesdigitalclient.jar");
+            props.setProperty("core.sgdClientJar", this.core_sgdClientJar);
+            props.setProperty("core.iesdigitalClientJar", this.core_iesdigitalClientJar);
+            props.setProperty("core.repoURLs", getCore_repoURLs());
 
             FileOutputStream filestream = new FileOutputStream(contextRoot+File.separator+COREINI);
             props.store(filestream, null);
@@ -189,5 +194,9 @@ public class CoreIni {
 //        CoreIni instance1 = CoreIni.getInstance(new String[]{"-debug"}, null);
 //        CoreIni instance2 = CoreIni.getInstance(new String[]{"-debug"}, null);
 //    }
+
+    public static String getCore_repoURLs() {
+        return core_repoURLs;
+    }
 
 }

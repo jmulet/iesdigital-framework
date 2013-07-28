@@ -4,9 +4,12 @@
  */
 package org.iesapp.framework.pluggable.modulesAPI;
 
+import java.awt.Component;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -17,24 +20,39 @@ import java.util.logging.Logger;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import javax.swing.ButtonGroup;
+import javax.swing.DefaultListModel;
+import javax.swing.Icon;
 import javax.swing.ImageIcon;
 import javax.swing.JFileChooser;
+import javax.swing.JLabel;
 import javax.swing.JOptionPane;
+import javax.swing.JTree;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import javax.swing.event.TableModelEvent;
 import javax.swing.event.TableModelListener;
 import javax.swing.filechooser.FileFilter;
 import javax.swing.table.DefaultTableModel;
+import javax.swing.tree.DefaultMutableTreeNode;
+import javax.swing.tree.DefaultTreeCellRenderer;
+import javax.swing.tree.DefaultTreeModel;
+import javax.swing.tree.TreePath;
 import javax.xml.parsers.ParserConfigurationException;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
 import org.iesapp.framework.pluggable.pluginsAPI.BeanAnchorPoint;
 import org.iesapp.framework.pluggable.pluginsAPI.PluginManager;
 import org.iesapp.framework.table.CellTableState;
 import org.iesapp.framework.table.MyIconButtonRenderer;
 import org.iesapp.framework.table.MyIconLabelRenderer;
 import org.iesapp.framework.util.CoreCfg;
+import org.iesapp.framework.util.CoreIni;
 import org.iesapp.framework.util.Unzip;
+import org.iesapp.updater.BeanModuleVersion;
+import org.iesapp.updater.BeanModulesRepo;
+import org.iesapp.updater.FileDownloaderPanel;
+import org.iesapp.updater.RemoteRepository;
+import org.iesapp.updater.RemoteUpdater;
 import org.iesapp.util.StringUtils;
 import org.xml.sax.SAXException;
 
@@ -43,6 +61,8 @@ import org.xml.sax.SAXException;
  * @author Josep
  */
 public class ModulesManager extends javar.JRDialog {
+
+  
     private DefaultTableModel modelTable1;
     private final Class classfor;
     private ArrayList<BeanModule> listInstalled;
@@ -194,6 +214,10 @@ public class ModulesManager extends javar.JRDialog {
         
         fillTable2();
         
+        fillModList();
+        
+        jTextField7.setText(CoreIni.getCore_repoURLs());
+        fillTree();
     }
 
     private void fillTable2()
@@ -209,6 +233,11 @@ public class ModulesManager extends javar.JRDialog {
     private boolean checkInstallable()
     {
         boolean q = true;
+        if(jTextPane1.getText().contains("Error:"))
+        {
+            return false;
+        }
+        
         if(jTabbedPane2.getSelectedIndex()==0)
         {
             q =!jTextField1.getText().isEmpty();
@@ -306,6 +335,9 @@ public class ModulesManager extends javar.JRDialog {
         jTextField1 = new javax.swing.JTextField();
         jLabel1 = new javax.swing.JLabel();
         jButton1 = new javax.swing.JButton();
+        jSplitPane1 = new javax.swing.JSplitPane();
+        jScrollPane4 = new javax.swing.JScrollPane();
+        jList1 = new javax.swing.JList();
         jScrollPane2 = new javax.swing.JScrollPane();
         jTextPane1 = new javax.swing.JTextPane();
         jPanel8 = new javax.swing.JPanel();
@@ -322,6 +354,20 @@ public class ModulesManager extends javar.JRDialog {
         jTextField6 = new javax.swing.JTextField();
         jButton4 = new javax.swing.JButton();
         jButton5 = new javax.swing.JButton();
+        jPanel9 = new javax.swing.JPanel();
+        jPanel10 = new javax.swing.JPanel();
+        jButton8 = new javax.swing.JButton();
+        jPanel11 = new javax.swing.JPanel();
+        jLabel8 = new javax.swing.JLabel();
+        jButton9 = new javax.swing.JButton();
+        jTextField7 = new javax.swing.JTextField();
+        jSplitPane2 = new javax.swing.JSplitPane();
+        jSplitPane3 = new javax.swing.JSplitPane();
+        jScrollPane5 = new javax.swing.JScrollPane();
+        jTree1 = new javax.swing.JTree();
+        jTaskPane1 = new com.l2fprod.common.swing.JTaskPane();
+        jScrollPane6 = new javax.swing.JScrollPane();
+        jTextPane2 = new javax.swing.JTextPane();
         jPanel4 = new javax.swing.JPanel();
         jCheckBox1 = new javax.swing.JCheckBox();
         jCheckBox2 = new javax.swing.JCheckBox();
@@ -344,11 +390,11 @@ public class ModulesManager extends javar.JRDialog {
         setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
         setTitle("Modules Manager");
         addWindowListener(new java.awt.event.WindowAdapter() {
-            public void windowClosing(java.awt.event.WindowEvent evt) {
-                formWindowClosing(evt);
-            }
             public void windowOpened(java.awt.event.WindowEvent evt) {
                 formWindowOpened(evt);
+            }
+            public void windowClosing(java.awt.event.WindowEvent evt) {
+                formWindowClosing(evt);
             }
         });
 
@@ -362,11 +408,16 @@ public class ModulesManager extends javar.JRDialog {
         jTable1.setModel(modelTable1);
         jTable1.setAutoResizeMode(javax.swing.JTable.AUTO_RESIZE_OFF);
         jTable1.setRowHeight(32);
-        String[] icons = new String[]{"/org/iesapp/framework/icons/redspot.gif",
-            "/org/iesapp/framework/icons/greenspot.gif",
-            "/org/iesapp/framework/icons/greyspot.gif",
-            "/org/iesapp/framework/icons/configIcon.gif"};
-        String[] icons2 = new String[]{"/org/iesapp/framework/icons/delete.gif","/org/iesapp/framework/icons/blank.gif"};
+        Icon[] icons = new Icon[]{
+            new ImageIcon(getClass().getResource("/org/iesapp/framework/icons/redspot.gif")),
+            new ImageIcon(getClass().getResource("/org/iesapp/framework/icons/greenspot.gif")),
+            new ImageIcon(getClass().getResource("/org/iesapp/framework/icons/greyspot.gif")),
+            new ImageIcon(getClass().getResource("/org/iesapp/framework/icons/configIcon.gif"))};
+
+        Icon[] icons2 = new Icon[]{
+            new ImageIcon(getClass().getResource("/org/iesapp/framework/icons/delete.gif")),
+            new ImageIcon(getClass().getResource("/org/iesapp/framework/icons/blank.gif"))};
+
         jTable1.getColumnModel().getColumn(0).setCellRenderer(new MyIconLabelRenderer(icons2));
         jTable1.getColumnModel().getColumn(1).setCellRenderer(new MyIconLabelRenderer(icons));
         jTable1.getColumnModel().getColumn(2).setPreferredWidth(240);
@@ -416,7 +467,7 @@ public class ModulesManager extends javar.JRDialog {
         jPanel1Layout.setVerticalGroup(
             jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel1Layout.createSequentialGroup()
-                .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 412, Short.MAX_VALUE)
+                .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 435, Short.MAX_VALUE)
                 .addGap(2, 2, 2)
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(jButton3)
@@ -424,9 +475,9 @@ public class ModulesManager extends javar.JRDialog {
                     .addComponent(jButton7)))
         );
 
-        jTabbedPane1.addTab("Instal·lats", jPanel1);
-
         java.util.ResourceBundle bundle = java.util.ResourceBundle.getBundle("org/iesapp/framework/pluggable/pluggable"); // NOI18N
+        jTabbedPane1.addTab(bundle.getString("installed"), jPanel1); // NOI18N
+
         jButton2.setText(bundle.getString("instalaModul")); // NOI18N
         jButton2.setEnabled(false);
         jButton2.addActionListener(new java.awt.event.ActionListener() {
@@ -453,24 +504,39 @@ public class ModulesManager extends javar.JRDialog {
             }
         });
 
+        jSplitPane1.setResizeWeight(0.5);
+        jSplitPane1.setOneTouchExpandable(true);
+
+        jList1.setSelectionMode(javax.swing.ListSelectionModel.SINGLE_SELECTION);
+        jList1.addListSelectionListener(new javax.swing.event.ListSelectionListener() {
+            public void valueChanged(javax.swing.event.ListSelectionEvent evt) {
+                jList1ValueChanged(evt);
+            }
+        });
+        jScrollPane4.setViewportView(jList1);
+
+        jSplitPane1.setLeftComponent(jScrollPane4);
+
         jTextPane1.setContentType("text/html"); // NOI18N
         jScrollPane2.setViewportView(jTextPane1);
+
+        jSplitPane1.setRightComponent(jScrollPane2);
 
         javax.swing.GroupLayout jPanel7Layout = new javax.swing.GroupLayout(jPanel7);
         jPanel7.setLayout(jPanel7Layout);
         jPanel7Layout.setHorizontalGroup(
             jPanel7Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel7Layout.createSequentialGroup()
-                .addContainerGap()
+                .addGap(1, 1, 1)
                 .addGroup(jPanel7Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jScrollPane2)
-                    .addGroup(jPanel7Layout.createSequentialGroup()
+                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel7Layout.createSequentialGroup()
                         .addComponent(jLabel1)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(jTextField1, javax.swing.GroupLayout.DEFAULT_SIZE, 524, Short.MAX_VALUE)
+                        .addComponent(jTextField1, javax.swing.GroupLayout.DEFAULT_SIZE, 575, Short.MAX_VALUE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(jButton1, javax.swing.GroupLayout.PREFERRED_SIZE, 33, javax.swing.GroupLayout.PREFERRED_SIZE)))
-                .addContainerGap())
+                        .addComponent(jButton1, javax.swing.GroupLayout.PREFERRED_SIZE, 33, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addComponent(jSplitPane1))
+                .addGap(1, 1, 1))
         );
         jPanel7Layout.setVerticalGroup(
             jPanel7Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -480,9 +546,9 @@ public class ModulesManager extends javar.JRDialog {
                     .addComponent(jLabel1)
                     .addComponent(jTextField1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(jButton1))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jScrollPane2, javax.swing.GroupLayout.DEFAULT_SIZE, 303, Short.MAX_VALUE)
-                .addContainerGap())
+                .addGap(1, 1, 1)
+                .addComponent(jSplitPane1)
+                .addGap(2, 2, 2))
         );
 
         jTabbedPane2.addTab("New STD module", jPanel7);
@@ -586,7 +652,7 @@ public class ModulesManager extends javar.JRDialog {
                 .addGroup(jPanel8Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(jLabel7)
                     .addComponent(jTextField5, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addContainerGap(166, Short.MAX_VALUE))
+                .addContainerGap(200, Short.MAX_VALUE))
         );
 
         jTabbedPane2.addTab("New Desktop-Open/Browse", jPanel8);
@@ -595,12 +661,12 @@ public class ModulesManager extends javar.JRDialog {
         jPanel2.setLayout(jPanel2Layout);
         jPanel2Layout.setHorizontalGroup(
             jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(jPanel2Layout.createSequentialGroup()
-                .addContainerGap()
-                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jPanel3, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(jTabbedPane2))
-                .addContainerGap())
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel2Layout.createSequentialGroup()
+                .addGap(5, 5, 5)
+                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                    .addComponent(jTabbedPane2)
+                    .addComponent(jPanel3, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                .addGap(5, 5, 5))
         );
         jPanel2Layout.setVerticalGroup(
             jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -608,11 +674,105 @@ public class ModulesManager extends javar.JRDialog {
                 .addContainerGap()
                 .addComponent(jTabbedPane2)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jPanel3, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap())
+                .addComponent(jPanel3, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
         );
 
-        jTabbedPane1.addTab(bundle.getString("instala"), jPanel2); // NOI18N
+        jTabbedPane1.addTab(bundle.getString("local"), jPanel2); // NOI18N
+
+        jButton8.setText("Download");
+        jButton8.setEnabled(false);
+        jButton8.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButton8ActionPerformed(evt);
+            }
+        });
+        jPanel10.add(jButton8);
+
+        jLabel8.setText("Repository URL");
+
+        jButton9.setText("Refresh");
+        jButton9.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButton9ActionPerformed(evt);
+            }
+        });
+
+        javax.swing.GroupLayout jPanel11Layout = new javax.swing.GroupLayout(jPanel11);
+        jPanel11.setLayout(jPanel11Layout);
+        jPanel11Layout.setHorizontalGroup(
+            jPanel11Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jPanel11Layout.createSequentialGroup()
+                .addGap(1, 1, 1)
+                .addComponent(jButton9)
+                .addGap(11, 11, 11)
+                .addComponent(jLabel8)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addComponent(jTextField7)
+                .addContainerGap())
+        );
+        jPanel11Layout.setVerticalGroup(
+            jPanel11Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jPanel11Layout.createSequentialGroup()
+                .addGap(5, 5, 5)
+                .addGroup(jPanel11Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(jButton9)
+                    .addComponent(jTextField7, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(jLabel8))
+                .addGap(5, 5, 5))
+        );
+
+        jSplitPane2.setResizeWeight(0.4);
+        jSplitPane2.setToolTipText("");
+        jSplitPane2.setOneTouchExpandable(true);
+
+        jSplitPane3.setOrientation(javax.swing.JSplitPane.VERTICAL_SPLIT);
+        jSplitPane3.setOneTouchExpandable(true);
+
+        jTree1.addTreeSelectionListener(new javax.swing.event.TreeSelectionListener() {
+            public void valueChanged(javax.swing.event.TreeSelectionEvent evt) {
+                jTree1ValueChanged(evt);
+            }
+        });
+        jScrollPane5.setViewportView(jTree1);
+
+        jSplitPane3.setTopComponent(jScrollPane5);
+
+        jTaskPane1.setFocusCycleRoot(true);
+        jSplitPane3.setBottomComponent(jTaskPane1);
+
+        jSplitPane2.setLeftComponent(jSplitPane3);
+
+        jTextPane2.setContentType("text/html"); // NOI18N
+        jScrollPane6.setViewportView(jTextPane2);
+
+        jSplitPane2.setRightComponent(jScrollPane6);
+
+        javax.swing.GroupLayout jPanel9Layout = new javax.swing.GroupLayout(jPanel9);
+        jPanel9.setLayout(jPanel9Layout);
+        jPanel9Layout.setHorizontalGroup(
+            jPanel9Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jPanel9Layout.createSequentialGroup()
+                .addGap(5, 5, 5)
+                .addGroup(jPanel9Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(jSplitPane2)
+                    .addGroup(jPanel9Layout.createSequentialGroup()
+                        .addComponent(jPanel10, javax.swing.GroupLayout.DEFAULT_SIZE, 676, Short.MAX_VALUE)
+                        .addGap(5, 5, 5))
+                    .addComponent(jPanel11, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))
+        );
+        jPanel9Layout.setVerticalGroup(
+            jPanel9Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jPanel9Layout.createSequentialGroup()
+                .addContainerGap()
+                .addComponent(jPanel11, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(jSplitPane2, javax.swing.GroupLayout.DEFAULT_SIZE, 379, Short.MAX_VALUE)
+                .addGap(2, 2, 2)
+                .addComponent(jPanel10, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(2, 2, 2))
+        );
+
+        jTabbedPane1.addTab(bundle.getString("remote"), jPanel9); // NOI18N
 
         jCheckBox1.setText(" Require ADMIN password to quit");
         jCheckBox1.addActionListener(new java.awt.event.ActionListener() {
@@ -721,7 +881,7 @@ public class ModulesManager extends javar.JRDialog {
                     .addComponent(jTextField2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addGap(18, 18, 18)
                 .addComponent(jPanel5, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(232, Short.MAX_VALUE))
+                .addContainerGap(259, Short.MAX_VALUE))
         );
 
         jTabbedPane1.addTab("App Preferences", jPanel4);
@@ -746,7 +906,7 @@ public class ModulesManager extends javar.JRDialog {
             jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel6Layout.createSequentialGroup()
                 .addComponent(jScrollPane3, javax.swing.GroupLayout.PREFERRED_SIZE, 347, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(0, 96, Short.MAX_VALUE))
+                .addGap(0, 119, Short.MAX_VALUE))
         );
 
         jTabbedPane1.addTab("App Init Parameters", jPanel6);
@@ -761,8 +921,6 @@ public class ModulesManager extends javar.JRDialog {
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addComponent(jTabbedPane1)
         );
-
-        jTabbedPane1.getAccessibleContext().setAccessibleName(bundle.getString("instalats")); // NOI18N
 
         pack();
     }// </editor-fold>//GEN-END:initComponents
@@ -908,84 +1066,9 @@ public class ModulesManager extends javar.JRDialog {
         {
             File file = jFileChooser1.getSelectedFile();
             lastDirectory = file.getParentFile();
-            jTextField1.setText(file.getAbsolutePath());
-          
-            //Unzip package to temporary dir
-            tmpdir = System.getProperty("java.io.tmpdir")+StringUtils.BeforeLast(file.getName(), ".");
-            try {
-                //Delete dir in case it may exist (we must also getrid of subdirectories)
-                org.apache.commons.io.FileUtils.deleteDirectory(new File(tmpdir));
-            } catch (IOException ex) {
-                Logger.getLogger(ModulesManager.class.getName()).log(Level.SEVERE, null, ex);
-            }
-                   
-            Unzip.unzip(file.getAbsolutePath(), tmpdir);
-            //System.out.println("contents unzipped to "+tmpdir);
-            //search for jar in tmpdir
-            File contents = new File(tmpdir);
-            File[] listFiles = contents.listFiles();
-            File modulefile = null;
-            for(File f: listFiles)
-            {
-                if(f.getAbsolutePath().endsWith(".jar"))
-                {
-                    modulefile = f;
-                    break;
-                }
-            }
             
-            if(modulefile==null)
-            {
-                jTextPane1.setText(bundle.getString("invalidModule"));
-                return;
-            }
-          
-            
-            
-            moduleList=null;
-            try {
-                ZipFile jarfile = new ZipFile(modulefile);
-                ZipEntry ze = jarfile.getEntry("META-INF/module.xml");
-                InputStream inputStream = jarfile.getInputStream(ze);
-                moduleList = genericFactory.loadModulesFromManifest(inputStream);                
-                inputStream.close();
-                jarfile.close();
-            } catch (IOException ex) {
-                //Logger.getLogger(ModulesManager.class.getName()).log(Level.SEVERE, null, ex);
-                jTextPane1.setText(bundle.getString("invalidModule"));
-                return;
-            }
-                       
-            if(moduleList!=null)
-            {
-                StringBuilder builder = new StringBuilder();
-                
-                for(BeanModule bip: moduleList)
-                {
-                String dependencies = bip.metaINF.dependencies;
-                dependencies = dependencies.isEmpty()?"none":dependencies;
-                jButton2.setEnabled(true);
-                
-                builder.append("<span><b>Author:</b> ");
-                builder.append(bip.metaINF.author).append("</span><br>");
-                builder.append("<span><b>Version:</b> ");
-                builder.append(bip.metaINF.version).append("</span><br>");
-                builder.append("<span><b>Description:</b></span><br><span> ");
-                builder.append(bip.metaINF.getDescription(coreCfg.core_lang)).append("</span><br><span>");
-                builder.append("<b>Dependencies:</b></span><br><span>  ");
-                builder.append(dependencies).append("</span><br><br>");                
-                }
-                
-                jTextPane1.setText(builder.toString());
-                jButton2.setEnabled(checkInstallable());
-            }
-            else
-            {
-                JOptionPane.showMessageDialog(this, bundle.getString("invalidModule"));
-            }
-                
+            displayInformationFor(file);
         }
-        
     }//GEN-LAST:event_jButton1ActionPerformed
 
     /**
@@ -1049,6 +1132,14 @@ public class ModulesManager extends javar.JRDialog {
     
     private void installSTD() throws IOException
     {
+        if(jTextPane1.getText().contains("Warning:"))
+        {
+            int showConfirmDialog = JOptionPane.showConfirmDialog(this, "Do you want to continue with warnings?", "Warnings", JOptionPane.YES_NO_OPTION);
+            if(showConfirmDialog != JOptionPane.OK_OPTION)
+            {
+                return;
+            }
+        }
         ArrayList<BeanModule> installed = genericFactory.loadModules();
         for(BeanModule binst: installed)
         {
@@ -1197,7 +1288,15 @@ public class ModulesManager extends javar.JRDialog {
         lock = new File(CoreCfg.contextRoot+"\\config\\modulesManager.lock");
         if(lock.exists())
         {
-            JOptionPane.showMessageDialog(javar.JRDialog.getActiveFrame(), "Modules manager is locked by file:\nconfig\\modulesManager.lock");
+            String info =  "";
+            try {
+                //Read lock information
+                info = " by "+FileUtils.readFileToString(lock);
+            } catch (IOException ex) {
+                Logger.getLogger(ModulesManager.class.getName()).log(Level.SEVERE, null, ex);
+            }
+            info = "Modules manager was locked\n"+info+"\nIf you are sure this is an error, please\nmanually remove file config/modulesManager.lock";
+            JOptionPane.showMessageDialog(javar.JRDialog.getActiveFrame(), info);
             this.setVisible(false);
             this.dispose();      
         }
@@ -1205,11 +1304,14 @@ public class ModulesManager extends javar.JRDialog {
         {
             try {
                 boolean created = lock.createNewFile();
+                
                 if(!created)
                 {
                     JOptionPane.showMessageDialog(javar.JRDialog.getActiveFrame(), "Can't create lock file");
                     this.dispose();
                 }
+                FileUtils.writeStringToFile(lock, coreCfg.getUserInfo().getName()+"\nat "+new java.util.Date());
+                
             } catch (IOException ex) {
                 Logger.getLogger(ModulesManager.class.getName()).log(Level.SEVERE, null, ex);
             }
@@ -1326,6 +1428,57 @@ public class ModulesManager extends javar.JRDialog {
         
     }//GEN-LAST:event_jButton7ActionPerformed
 
+    private void jList1ValueChanged(javax.swing.event.ListSelectionEvent evt) {//GEN-FIRST:event_jList1ValueChanged
+        int id = jList1.getSelectedIndex();
+        if(id>=0)
+        {
+            String filename = (String) jList1.getSelectedValue();
+            File file = new File(CoreCfg.contextRoot+File.separator+"installables"+File.separator+filename); 
+            displayInformationFor(file);
+        }
+    }//GEN-LAST:event_jList1ValueChanged
+
+    private void jButton8ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton8ActionPerformed
+        TreePath path = jTree1.getSelectionPath();
+        if(path.getPathCount()==3) //Correct depth
+        {
+           DefaultMutableTreeNode node1 = (DefaultMutableTreeNode) path.getLastPathComponent();
+           DefaultMutableTreeNode node2 = (DefaultMutableTreeNode) node1.getParent();
+           BeanModuleVersion bmv = (BeanModuleVersion) node1.getUserObject();
+           BeanModulesRepo bmr = (BeanModulesRepo) node2.getUserObject();
+           
+           String url = bmv.getFileName();
+           String name = StringUtils.AfterLast("/", url);
+           File file = new File(CoreCfg.contextRoot+File.separator+"installables"+File.separator+name);
+           FileDownloaderPanel fdp = new FileDownloaderPanel(url, file);
+           jTaskPane1.add(fdp);
+           fdp.download();
+        }
+    }//GEN-LAST:event_jButton8ActionPerformed
+
+    private void jButton9ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton9ActionPerformed
+        fillTree();
+    }//GEN-LAST:event_jButton9ActionPerformed
+
+    private void jTree1ValueChanged(javax.swing.event.TreeSelectionEvent evt) {//GEN-FIRST:event_jTree1ValueChanged
+        TreePath path = evt.getPath();
+        System.out.println(path);
+        if(path.getPathCount()==3) //Correct depth
+        {
+           DefaultMutableTreeNode node1 = (DefaultMutableTreeNode) path.getLastPathComponent();
+           DefaultMutableTreeNode node2 = (DefaultMutableTreeNode) node1.getParent();
+           BeanModuleVersion bmv = (BeanModuleVersion) node1.getUserObject();
+           BeanModulesRepo bmr = (BeanModulesRepo) node2.getUserObject();
+           
+           jTextPane2.setText(bmv.toString());
+           jButton8.setEnabled(true);
+        }
+        else
+        {
+            jButton8.setEnabled(false);
+        }
+    }//GEN-LAST:event_jTree1ValueChanged
+
    
    
     // Variables declaration - do not modify//GEN-BEGIN:variables
@@ -1336,6 +1489,8 @@ public class ModulesManager extends javar.JRDialog {
     private javax.swing.JButton jButton5;
     private javax.swing.JButton jButton6;
     private javax.swing.JButton jButton7;
+    private javax.swing.JButton jButton8;
+    private javax.swing.JButton jButton9;
     private javax.swing.JCheckBox jCheckBox1;
     private javax.swing.JCheckBox jCheckBox2;
     private javax.swing.JCheckBox jCheckBox3;
@@ -1350,7 +1505,11 @@ public class ModulesManager extends javar.JRDialog {
     private javax.swing.JLabel jLabel5;
     private javax.swing.JLabel jLabel6;
     private javax.swing.JLabel jLabel7;
+    private javax.swing.JLabel jLabel8;
+    private javax.swing.JList jList1;
     private javax.swing.JPanel jPanel1;
+    private javax.swing.JPanel jPanel10;
+    private javax.swing.JPanel jPanel11;
     private javax.swing.JPanel jPanel2;
     private javax.swing.JPanel jPanel3;
     private javax.swing.JPanel jPanel4;
@@ -1358,22 +1517,33 @@ public class ModulesManager extends javar.JRDialog {
     private javax.swing.JPanel jPanel6;
     private javax.swing.JPanel jPanel7;
     private javax.swing.JPanel jPanel8;
+    private javax.swing.JPanel jPanel9;
     private javax.swing.JRadioButton jRadioButton1;
     private javax.swing.JRadioButton jRadioButton2;
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JScrollPane jScrollPane2;
     private javax.swing.JScrollPane jScrollPane3;
+    private javax.swing.JScrollPane jScrollPane4;
+    private javax.swing.JScrollPane jScrollPane5;
+    private javax.swing.JScrollPane jScrollPane6;
+    private javax.swing.JSplitPane jSplitPane1;
+    private javax.swing.JSplitPane jSplitPane2;
+    private javax.swing.JSplitPane jSplitPane3;
     private javax.swing.JTabbedPane jTabbedPane1;
     private javax.swing.JTabbedPane jTabbedPane2;
     private javax.swing.JTable jTable1;
     private javax.swing.JTable jTable2;
+    private com.l2fprod.common.swing.JTaskPane jTaskPane1;
     private javax.swing.JTextField jTextField1;
     private javax.swing.JTextField jTextField2;
     private javax.swing.JTextField jTextField3;
     private javax.swing.JTextField jTextField4;
     private javax.swing.JTextField jTextField5;
     private javax.swing.JTextField jTextField6;
+    private javax.swing.JTextField jTextField7;
     private javax.swing.JTextPane jTextPane1;
+    private javax.swing.JTextPane jTextPane2;
+    private javax.swing.JTree jTree1;
     // End of variables declaration//GEN-END:variables
 
 
@@ -1408,11 +1578,14 @@ public class ModulesManager extends javar.JRDialog {
      * Deploys a module installable
      * installable file of the installable mod or plg
      * list: list of modules/plugins which contains the extension jar, set null (the program will search for them)
-     * @param installable
-     * @param list
-     * @param factory
-     * @param replaceJar
-     * @param replaceLibs 
+     * @param installable : .mod or .plg file
+     * @param appClassName : name of the aplication class 
+     * @param type : GenericFactory.PLUGIN or GenericFactory.MODULE
+     * @param moduleClassName : name of the module classs
+     * @param ver : new version of the module
+     * @param replaceJar : boolean    
+     * @param replaceLibs : boolean
+     * @throws java.io.IOException 
      */
     public static void update(final File installable, 
             String appClassName, int type, String moduleClassName, final String ver,
@@ -1426,19 +1599,30 @@ public class ModulesManager extends javar.JRDialog {
        {
             ArrayList<String> parsed = StringUtils.parseStringToArray(moduleClassName, "\\", StringUtils.CASE_INSENSITIVE);
             factory = new GenericFactory(appClassName,"","");
-            factory.setCurrentModuleClass(parsed.get(0));
-            factory.setCurrentPluginClass(parsed.get(1));
+            boolean found1 = factory.setCurrentModuleClass(parsed.get(0));
+            boolean found2 = factory.setCurrentPluginClass(parsed.get(1));
+            //if this application does not contain such a module/plugin, nothing to do
+            if(!found1 || !found2)
+            {
+                return;
+            }
        }
        else
        {
              factory = new GenericFactory(appClassName,"","");
-             factory.setCurrentModuleClass(moduleClassName);
+             boolean found = factory.setCurrentModuleClass(moduleClassName);
+             //if this application does not contain such a module, nothing to do
+             if(!found)
+             {
+                 return;
+             }
        }
        }
        catch(Exception ex)
        {
                 //
        }
+       
        
         File[] listFiles = contents.listFiles();
         for(File f: listFiles)
@@ -1476,6 +1660,7 @@ public class ModulesManager extends javar.JRDialog {
                 }
                         
                 //Replace the jar file name in the beans (which are to be saved in xml)
+                //these methods do nothing if application does not contain such a module
                 if(type == GenericFactory.MODULE)
                 {
                     factory.setModuleAttribute("jar", realName);
@@ -1515,5 +1700,290 @@ public class ModulesManager extends javar.JRDialog {
         
     }
 
+/**
+ * The same as before but update applies to all exisiting applications in config/*.xml
+ * @param installable
+ * @param type
+ * @param moduleClassName
+ * @param ver
+ * @param replaceJar
+ * @param replaceLibs
+     * @throws java.io.IOException
+ */    
+     public static void update(final File installable, int type, String moduleClassName, final String ver,
+            boolean replaceJar, boolean replaceLibs) throws IOException  
+    {
+        //Look for all existing applications
+        ArrayList<String> list = getAllApplicationClassNames();
+        for(String appClassName: list)
+        {
+            update(installable, appClassName, type, moduleClassName, ver, replaceJar, replaceLibs); 
+        }
+    }
+
+    public static ArrayList<String> getAllApplicationClassNames() {
+        ArrayList<String> list = new ArrayList<String>();
+        //
+        File dir = new File(CoreCfg.contextRoot+File.separator+"config");
+        
+        FilenameFilter filter = new FilenameFilter() {
+
+            @Override
+            public boolean accept(File file, String name) {
+                return name.toLowerCase().endsWith(".xml");
+            }
+        };
+        File[] listFiles = dir.listFiles(filter);
+        //Make sure this files are valid application files
+        //Check if they contain tag <application ...
+        for(File f: listFiles)
+        {
+            System.out.println(f);
+            String content = "";
+            FileInputStream inputStream = null;
+            try {
+                inputStream = new FileInputStream(f);
+                content = IOUtils.toString(inputStream);
+            } catch (Exception ex) {
+                Logger.getLogger(ModulesManager.class.getName()).log(Level.SEVERE, null, ex);
+            } finally {
+                if(inputStream!=null){
+                    try {
+                        inputStream.close();
+                    } catch (IOException ex) {
+                        Logger.getLogger(ModulesManager.class.getName()).log(Level.SEVERE, null, ex);
+                    }
+                }
+            }
+            if(content.toLowerCase().contains("<application"))
+            {
+                list.add(StringUtils.BeforeLast(f.getName(),".").replaceAll("-", "."));
+            }
+        }
+        return list;
+    }
+     
+    private void displayInformationFor(File file) {
+       
+            jTextField1.setText(file.getAbsolutePath());
+          
+            //Unzip package to temporary dir
+            tmpdir = System.getProperty("java.io.tmpdir")+StringUtils.BeforeLast(file.getName(), ".");
+            try {
+                //Delete dir in case it may exist (we must also getrid of subdirectories)
+                org.apache.commons.io.FileUtils.deleteDirectory(new File(tmpdir));
+            } catch (IOException ex) {
+                Logger.getLogger(ModulesManager.class.getName()).log(Level.SEVERE, null, ex);
+            }
+                   
+            Unzip.unzip(file.getAbsolutePath(), tmpdir);
+            //System.out.println("contents unzipped to "+tmpdir);
+            //search for jar in tmpdir
+            File contents = new File(tmpdir);
+            File[] listFiles = contents.listFiles();
+            File modulefile = null;
+            for(File f: listFiles)
+            {
+                if(f.getAbsolutePath().endsWith(".jar"))
+                {
+                    modulefile = f;
+                    break;
+                }
+            }
+            
+            if(modulefile==null)
+            {
+                jTextPane1.setText(bundle.getString("invalidModule"));
+                return;
+            }
+          
+            
+            
+            moduleList=null;
+            try {
+                ZipFile jarfile = new ZipFile(modulefile);
+                ZipEntry ze = jarfile.getEntry("META-INF/module.xml");
+                InputStream inputStream = jarfile.getInputStream(ze);
+                moduleList = genericFactory.loadModulesFromManifest(inputStream);                
+                inputStream.close();
+                jarfile.close();
+            } catch (IOException ex) {
+                //Logger.getLogger(ModulesManager.class.getName()).log(Level.SEVERE, null, ex);
+                jTextPane1.setText(bundle.getString("invalidModule"));
+                return;
+            }
+                       
+            if(moduleList!=null)
+            {
+                StringBuilder builder = new StringBuilder();
+                
+                for(BeanModule bip: moduleList)
+                {
+                String dependencies = bip.metaINF.dependencies;
+                dependencies = dependencies.isEmpty()?"none":dependencies;
+                jButton2.setEnabled(true);
+                
+                builder.append("<span><b>Author:</b> ");
+                builder.append(bip.metaINF.author).append("</span><br>");
+                builder.append("<span><b>Version:</b> ");
+                builder.append(bip.metaINF.version).append("</span><br>");
+                builder.append("<span><b>Description:</b></span><br><span> ");
+                builder.append(bip.metaINF.getDescription(coreCfg.core_lang)).append("</span><br><span>");
+                builder.append("<b>Dependencies:</b></span><br><span>  ");
+                builder.append(dependencies).append("</span><br>");  
+                builder.append("<b>URL:</b></span><br><span>  ");
+                builder.append(bip.metaINF.getUrl()).append("</span><br>");  
+                builder.append("<b>Min framework version:</b></span><span>  ");
+                builder.append(bip.metaINF.getMinFrameworkVersion()).append("</span><br>");  
+                builder.append("<b>Min client iesdigital version:</b></span><span>  ");
+                builder.append(bip.metaINF.getMinClientID()).append("</span><br>"); 
+                builder.append("<b>Min client SGD version:</b></span><span>  ");
+                builder.append(bip.metaINF.getMinClientSGD()).append("</span><br>"); 
+                
+                //Do checks
+                if(!bip.metaINF.getMinFrameworkVersion().isEmpty() &&
+                    StringUtils.compare(bip.metaINF.getMinFrameworkVersion(), CoreCfg.VERSION)>0)
+                {
+                     builder.append("<span style=\"color:red\">Error: This module requires ").append(bip.metaINF.getMinFrameworkVersion()).
+                             append(" framework version. Current version is ").append(CoreCfg.VERSION).append(", please upgrade your system.</span><br>");
+                }
+                else if(!bip.metaINF.getMinFrameworkVersion().isEmpty() &&
+                    StringUtils.compare(bip.metaINF.getMinFrameworkVersion(), CoreCfg.VERSION)<0)
+                {
+                     builder.append("<span style=\"color:blue\">Warning: This module requires ").append(bip.metaINF.getMinFrameworkVersion()).
+                             append(" framework version. Current version is ").append(CoreCfg.VERSION).append(".</span><br>");
+                }
+                
+                if(!bip.metaINF.getMinClientID().isEmpty() &&
+                    StringUtils.compare(bip.metaINF.getMinClientID(), coreCfg.getIesClient().getClientVersion())>0)
+                {
+                      builder.append("<span style=\"color:red\">Error: This module requires ").append(bip.metaINF.getMinClientID()).
+                             append(" iesdigital client version. Current version is ").append(coreCfg.getIesClient().getClientVersion()).append(", please upgrade your system.</span><br>");
+                }
+                else if(!bip.metaINF.getMinClientID().isEmpty() &&
+                    StringUtils.compare(bip.metaINF.getMinClientID(), coreCfg.getIesClient().getClientVersion())<0)
+                {
+                      builder.append("<span style=\"color:blue\">Warning: This module requires ").append(bip.metaINF.getMinClientID()).
+                             append(" iesdigital client version. Current version is ").append(coreCfg.getIesClient().getClientVersion()).append(".</span><br>");
+                }
+                
+                if(!bip.metaINF.getMinClientSGD().isEmpty() &&
+                    StringUtils.compare(bip.metaINF.getMinClientSGD(), coreCfg.getSgdClient().getClientVersion())>0)
+                {
+                     builder.append("<span style=\"color:red\">Error: This module requires ").append(bip.metaINF.getMinClientSGD()).
+                             append(" sgd client version. Current version is ").append(coreCfg.getSgdClient().getClientVersion()).append(", please upgrade your system.</span><br>");
+                }
+                else  if(!bip.metaINF.getMinClientSGD().isEmpty() &&
+                    StringUtils.compare(bip.metaINF.getMinClientSGD(), coreCfg.getSgdClient().getClientVersion())<0)
+                {
+                     builder.append("<span style=\"color:blue\">Warning: This module requires ").append(bip.metaINF.getMinClientSGD()).
+                             append(" sgd client version. Current version is ").append(coreCfg.getSgdClient().getClientVersion()).append(".</span><br>");
+                }
+                }
+                
+                jTextPane1.setText(builder.toString());
+                jButton2.setEnabled(checkInstallable());
+            }
+            else
+            {
+                JOptionPane.showMessageDialog(this, bundle.getString("invalidModule"));
+            }
+                
+        
+        
+    }
+
+    private void fillModList() {
+       DefaultListModel model = new DefaultListModel();
+       jList1.setModel(model);
+       
+       File f = new File(CoreCfg.contextRoot+File.separator+"installables");
+       FilenameFilter filter = new FilenameFilter() {
+
+           @Override
+           public boolean accept(File dir, String name) {
+               return name.toLowerCase().endsWith(".mod");
+           }
+       };
+       
+       File[] listFiles = f.listFiles(filter);
+       for(File file: listFiles)
+       {
+           model.addElement(file.getName());
+       }
+    }
+
+    private void fillTree() {
+        
+        //Clear tree
+        DefaultMutableTreeNode root = new DefaultMutableTreeNode("Modules");
+        DefaultTreeModel treeModel1 = new DefaultTreeModel(root);
+        jTree1.setModel(treeModel1);
+        jTree1.setCellRenderer(new RepoTreeCellRenderer());
+        
+        //Reload Repository
+        String url = jTextField7.getText();
+        RemoteUpdater remoteUpdater1 = new RemoteUpdater(url);
+        RemoteRepository repository;
+        try {
+            repository = remoteUpdater1.getModulesRepo();
+            //Fill tree
+            for(BeanModulesRepo bmr: repository.getModules())
+            {
+                DefaultMutableTreeNode module = new DefaultMutableTreeNode(bmr);
+                for(BeanModuleVersion bmv: bmr.getModuleVersions())
+                {
+                     DefaultMutableTreeNode version = new DefaultMutableTreeNode(bmv);
+                     module.add(version);
+                }
+                root.add(module);
+            }
+        } catch (Exception ex) {
+            Logger.getLogger(ModulesManager.class.getName()).log(Level.SEVERE, null, ex);
+        }
+         
+        for(int i=0; i<jTree1.getRowCount(); i++)
+        {
+            jTree1.expandPath(jTree1.getPathForRow(i));
+        }
+            
+        
+        
+    }
+
+    
+    protected class RepoTreeCellRenderer extends DefaultTreeCellRenderer {
+
+        @Override
+        public Component getTreeCellRendererComponent(JTree tree, Object value,
+                boolean selected, boolean expanded, boolean leaf, int row,
+                boolean hasFocus) {
+            
+//                Component component = super.getTreeCellRendererComponent(
+//                    tree, value, selected,
+//                    expanded, leaf, row,
+//                    hasFocus);
+            
+            JLabel returnValue = new JLabel();
+           
+            if ((value != null) && (value instanceof DefaultMutableTreeNode)) {
+                Object userObject = ((DefaultMutableTreeNode) value).getUserObject();
+                if (userObject instanceof BeanModulesRepo) {
+                    BeanModulesRepo bmr = (BeanModulesRepo) userObject;
+                    returnValue.setText( bmr.getName().toUpperCase() +" : "+bmr.getClassName());
+                }
+                else if (userObject instanceof BeanModuleVersion) {
+                    BeanModuleVersion bmr = (BeanModuleVersion) userObject;
+                    returnValue.setText( "Version : "+bmr.getVersion());
+                }
+                else
+                {
+                    returnValue.setText(value.toString());
+                }
+            }
+
+            return returnValue;
+        }
+    }
 
 }

@@ -39,7 +39,7 @@ public class ReportFactory {
         //S'assegura que els reports estan en el classPath
         if(!loaded)
         {
-            org.iesapp.framework.util.JarClassLoader.getInstance().addDirToClasspath(new java.io.File(CoreCfg.contextRoot + "\\lib\\"+PATH));
+            org.iesapp.framework.util.JarClassLoader.getInstance().addToClasspath(new java.io.File(CoreCfg.contextRoot + "\\lib\\"+PATH));
         }
         loaded = true;
         
@@ -188,7 +188,7 @@ public class ReportFactory {
     public static Object createJRBeanCollectionDataSource(List list) {
         if(!loaded)
         {
-            org.iesapp.framework.util.JarClassLoader.getInstance().addDirToClasspath(new java.io.File(CoreCfg.contextRoot + "\\lib\\"+PATH));
+            org.iesapp.framework.util.JarClassLoader.getInstance().addToClasspath(new java.io.File(CoreCfg.contextRoot + "\\lib\\"+PATH));
         }
         Object obj = null;
         try {
