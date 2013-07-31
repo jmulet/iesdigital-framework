@@ -2,7 +2,7 @@
  * To change this template, choose Tools | Templates
  * and open the template in the editor.
  */
-package org.iesapp.framework.pluggable.deamons;
+package org.iesapp.framework.pluggable.daemons;
 
 import org.iesapp.util.StringUtils;
 import org.w3c.dom.NamedNodeMap;
@@ -12,7 +12,7 @@ import org.w3c.dom.Node;
  *
  * @author Josep
  */
-public class BeanDeamon {
+public class BeanDaemon {
     //Deamons must be in the same jar than modules
     //no need for specifier jarFile name
     

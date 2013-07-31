@@ -1159,18 +1159,18 @@ public class ModulesManager extends javar.JRDialog {
         File[] listFiles = contents.listFiles();
         for(File f: listFiles)
         {
-            //Copy module libraries in lib/ folder
+            //Copy module libraries in modules/lib/ folder
             if(f.isDirectory() && f.getName().equals("lib"))
             {
                 File[] listFiles1 = f.listFiles();
                 for(File f1: listFiles1)
                 {
-                    File tmp = new File(CoreCfg.contextRoot+"\\lib\\"+f1.getName());
+                    File tmp = new File(CoreCfg.contextRoot+ File.separator + "modules" + File.separator +"lib"+File.separator+f1.getName());
                     if(!tmp.exists())
                     {
                         FileUtils.copyFile(f1, tmp); 
                     }
-                    moduleList.get(0).getRequiredLibs().add("lib\\"+f1.getName());
+                    moduleList.get(0).getRequiredLibs().add("lib"+File.separator+f1.getName());
                 }
             }
             else if(f.isFile() && f.getAbsolutePath().endsWith(".jar"))
@@ -1192,7 +1192,7 @@ public class ModulesManager extends javar.JRDialog {
                     bip.setJar(realName);
                 }
             }
-            else if(f.isFile() && f.getAbsolutePath().endsWith(".ini"))
+            else if(f.isFile() && f.getAbsolutePath().endsWith(".ini") || f.isFile() && f.getAbsolutePath().endsWith(".xml"))
             {
                 //copy plugin icon to plugins resource folder
                 FileUtils.copyFile(f, new File(CoreCfg.contextRoot+File.separator+"config"+File.separator+f.getName()));
@@ -1204,6 +1204,7 @@ public class ModulesManager extends javar.JRDialog {
                 //copy plugin icon to plugins resource folder
                 FileUtils.copyFile(f, new File(CoreCfg.contextRoot+File.separator+"resources"+File.separator+f.getName()));
             }
+            //Discard any other file type
         }
         
         //Desa xml

@@ -2,7 +2,7 @@
  * To change this template, choose Tools | Templates
  * and open the template in the editor.
  */
-package org.iesapp.framework.pluggable.deamons;
+package org.iesapp.framework.pluggable.daemons;
 
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -16,9 +16,9 @@ import org.iesapp.framework.util.CoreCfg;
  *
  * @author Josep
  */
-public abstract class TopModuleDeamon {
+public abstract class TopModuleDaemon {
     
-    public static final HashMap<String,TopModuleDeamon> deamons = new HashMap<String,TopModuleDeamon>();
+    public static final HashMap<String,TopModuleDaemon> deamons = new HashMap<String,TopModuleDaemon>();
     
     public static final byte STATUS_NORMAL = 1;
     public static final byte STATUS_SLEEPING = 0;
@@ -26,20 +26,22 @@ public abstract class TopModuleDeamon {
     protected javax.swing.Timer timer;
     protected byte status = STATUS_NORMAL; //by-DEFAULT
     protected transient final PropertyChangeSupport propertyChangeSupport = new PropertyChangeSupport(this);
-    protected BeanDeamon deamon;
+    protected BeanDaemon deamon;
     protected String moduleClassName="";
     protected CoreCfg coreCfg;
     private boolean manualCheck = false;
+    private long startTime;
     
    
     /**
      * Get the value of status
      *
-     * @return the value of status
+     * @param coreCfg
      */
     
-    public void initialize(CoreCfg coreCfg)
+    public void initialize(final CoreCfg coreCfg)
     {
+        this.startTime = System.currentTimeMillis();
         this.coreCfg = coreCfg;
     }
     
@@ -98,11 +100,11 @@ public abstract class TopModuleDeamon {
     
     public abstract HashMap getCurrentValues();
     
-    public BeanDeamon getDeamon() {
+    public BeanDaemon getDeamon() {
         return deamon;
     }
 
-    public void setDeamon(BeanDeamon deamon) {
+    public void setDeamon(BeanDaemon deamon) {
         this.deamon = deamon;
     }
 
@@ -117,7 +119,7 @@ public abstract class TopModuleDeamon {
     public abstract void reset();
     
     
-    public static HashMap<String,TopModuleDeamon> getActiveDeamons()
+    public static HashMap<String,TopModuleDaemon> getActiveDeamons()
     {
         return deamons;
     }
@@ -126,5 +128,10 @@ public abstract class TopModuleDeamon {
         manualCheck = true;
         checkStatusProcedure();
         manualCheck = false;
+    }
+    
+    public long getUpTime()
+    {
+        return System.currentTimeMillis() - startTime;
     }
 }

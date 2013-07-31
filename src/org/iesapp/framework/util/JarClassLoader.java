@@ -19,9 +19,6 @@ import java.util.List;
 import java.util.jar.JarFile;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import javax.swing.Icon;
-import javax.swing.ImageIcon;
-import org.hibernate.util.ReflectHelper;
 import org.iesapp.framework.pluggable.modulesAPI.BeanModule;
 
 /**
@@ -67,7 +64,7 @@ public class JarClassLoader extends URLClassLoader{
     private void addJarToClasspath(File jar)
     {
         try {
-           addURLReflection(jar.toURI().toURL());
+           addURLToClassLoader(this, jar.toURI().toURL());
         } catch (MalformedURLException ex) {
             Logger.getLogger(JarClassLoader.class.getName()).log(Level.SEVERE, null, ex);
         }  
@@ -93,8 +90,8 @@ public class JarClassLoader extends URLClassLoader{
         } 
     }
 
-    private void addURLReflection(URL u) {
-        URL urls[] = this.getURLs();
+    public static void addURLToClassLoader(ClassLoader classLoader, URL u) {
+        URL urls[] = ((URLClassLoader) classLoader).getURLs();
         for(URL url: urls)
         {
             if(url.toString().equalsIgnoreCase(u.toString()))
@@ -111,7 +108,7 @@ public class JarClassLoader extends URLClassLoader{
             Method method;
             method = sysclass.getDeclaredMethod("addURL", URL.class);
             method.setAccessible(true);
-            method.invoke(this, new Object[]{u});
+            method.invoke(classLoader, new Object[]{u});
             //System.out.println("added to classpath: "+u.toString());
         } catch (Exception ex) {
             Logger.getLogger(JarClassLoader.class.getName()).log(Level.SEVERE, null, ex);
@@ -150,120 +147,116 @@ public class JarClassLoader extends URLClassLoader{
          
     }
 
-    /**
-     * cleanup jar file factory cache
-     */
-    @SuppressWarnings({"nls", "unchecked"})
-    public boolean cleanupJarFileFactory(List setJarFileNames2Close) {
-        boolean res = false;
-        Class classJarURLConnection = null;
-        try {
-            classJarURLConnection = ReflectHelper.classForName("sun.net.www.protocol.jar.JarURLConnection");
-        } catch (ClassNotFoundException e) {
-            //System.out.println(e);
-        }
-        if (classJarURLConnection == null) {
-            return res;
-        }
-        Field f = null;
-        try {
-            f = classJarURLConnection.getDeclaredField("factory");
-        } catch (NoSuchFieldException e) {
-            //ignore
-        }
-        if (f == null) {
-            return res;
-        }
-        f.setAccessible(true);
-        Object obj = null;
-        try {
-            obj = f.get(null);
-        } catch (IllegalAccessException e) {
-            //ignore
-        }
-        if (obj == null) {
-            return res;
-        }
-        Class classJarFileFactory = obj.getClass();
-        //
-        HashMap fileCache = null;
-        try {
-            f = classJarFileFactory.getDeclaredField("fileCache");
-            f.setAccessible(true);
-            obj = f.get(null);
-            if (obj  instanceof HashMap) {
-                  fileCache = (HashMap) obj;
-            }
-        } catch (NoSuchFieldException e) {
-        } catch (IllegalAccessException e) {
-            //ignore
-        }
-        //System.out.println("fileCache "+fileCache.toString());
-        HashMap urlCache = null;
-        try {
-            f = classJarFileFactory.getDeclaredField("urlCache");
-            f.setAccessible(true);
-            obj = f.get(null);
-            if (obj  instanceof HashMap) {
-                urlCache = (HashMap) obj;   
-            }
-
-        } catch (Exception e) {
-            //System.out.println(e);
-        }
-        //System.out.println("urlCache "+urlCache.toString());
-        if (urlCache != null) {
-            HashMap urlCacheTmp = (HashMap) urlCache.clone();
-            Iterator it = urlCacheTmp.keySet().iterator();
-            while (it.hasNext()) {
-                obj = it.next();
-                if (!(obj instanceof  JarFile) )
-                {
-                    continue;
-                }
-                JarFile jarFile = (JarFile) obj;
-                //System.out.println("found jarFile "+jarFile.getName());
-                if (setJarFileNames2Close.contains(jarFile.getName())) {
-                    try {
-                        jarFile.close();
-                    } catch (IOException e) {
-                        //ignore
-                    }
-                    if (fileCache != null) {
-                        fileCache.remove(urlCache.get(jarFile));
-                    }
-                    urlCache.remove(jarFile);
-                }
-            }
-            res = true;
-        } else if (fileCache != null) {
-            // urlCache := null
-            HashMap fileCacheTmp = (HashMap) fileCache.clone();
-            Iterator it = fileCacheTmp.keySet().iterator();
-            while (it.hasNext()) {
-                Object key = it.next();
-                obj = fileCache.get(key);
-                if (!(obj instanceof  JarFile) )
-                {
-                    continue;
-                }
-                JarFile jarFile = (JarFile) obj;
-                //System.out.println("found jarFile "+jarFile.getName());
-
-                if (setJarFileNames2Close.contains(jarFile.getName())) {
-                    try {
-                        jarFile.close();
-                    } catch (IOException e) {
-                        //ignore
-                    }
-                    fileCache.remove(key);
-                }
-            }
-            res = true;
-        }
-        setJarFileNames2Close.clear();
-        return res;
-    }
+//    /**
+//     * cleanup jar file factory cache
+//     */
+//    @SuppressWarnings({"nls", "unchecked"})
+//    public boolean cleanupJarFileFactory(List setJarFileNames2Close) {
+//        boolean res = false;
+//        Class classJarURLConnection = null;
+//        classJarURLConnection = ReflectHelper.classForName("sun.net.www.protocol.jar.JarURLConnection");
+//        if (classJarURLConnection == null) {
+//            return res;
+//        }
+//        Field f = null;
+//        try {
+//            f = classJarURLConnection.getDeclaredField("factory");
+//        } catch (NoSuchFieldException e) {
+//            //ignore
+//        }
+//        if (f == null) {
+//            return res;
+//        }
+//        f.setAccessible(true);
+//        Object obj = null;
+//        try {
+//            obj = f.get(null);
+//        } catch (IllegalAccessException e) {
+//            //ignore
+//        }
+//        if (obj == null) {
+//            return res;
+//        }
+//        Class classJarFileFactory = obj.getClass();
+//        //
+//        HashMap fileCache = null;
+//        try {
+//            f = classJarFileFactory.getDeclaredField("fileCache");
+//            f.setAccessible(true);
+//            obj = f.get(null);
+//            if (obj  instanceof HashMap) {
+//                  fileCache = (HashMap) obj;
+//            }
+//        } catch (NoSuchFieldException e) {
+//        } catch (IllegalAccessException e) {
+//            //ignore
+//        }
+//        //System.out.println("fileCache "+fileCache.toString());
+//        HashMap urlCache = null;
+//        try {
+//            f = classJarFileFactory.getDeclaredField("urlCache");
+//            f.setAccessible(true);
+//            obj = f.get(null);
+//            if (obj  instanceof HashMap) {
+//                urlCache = (HashMap) obj;   
+//            }
+//
+//        } catch (Exception e) {
+//            //System.out.println(e);
+//        }
+//        //System.out.println("urlCache "+urlCache.toString());
+//        if (urlCache != null) {
+//            HashMap urlCacheTmp = (HashMap) urlCache.clone();
+//            Iterator it = urlCacheTmp.keySet().iterator();
+//            while (it.hasNext()) {
+//                obj = it.next();
+//                if (!(obj instanceof  JarFile) )
+//                {
+//                    continue;
+//                }
+//                JarFile jarFile = (JarFile) obj;
+//                //System.out.println("found jarFile "+jarFile.getName());
+//                if (setJarFileNames2Close.contains(jarFile.getName())) {
+//                    try {
+//                        jarFile.close();
+//                    } catch (IOException e) {
+//                        //ignore
+//                    }
+//                    if (fileCache != null) {
+//                        fileCache.remove(urlCache.get(jarFile));
+//                    }
+//                    urlCache.remove(jarFile);
+//                }
+//            }
+//            res = true;
+//        } else if (fileCache != null) {
+//            // urlCache := null
+//            HashMap fileCacheTmp = (HashMap) fileCache.clone();
+//            Iterator it = fileCacheTmp.keySet().iterator();
+//            while (it.hasNext()) {
+//                Object key = it.next();
+//                obj = fileCache.get(key);
+//                if (!(obj instanceof  JarFile) )
+//                {
+//                    continue;
+//                }
+//                JarFile jarFile = (JarFile) obj;
+//                //System.out.println("found jarFile "+jarFile.getName());
+//
+//                if (setJarFileNames2Close.contains(jarFile.getName())) {
+//                    try {
+//                        jarFile.close();
+//                    } catch (IOException e) {
+//                        //ignore
+//                    }
+//                    fileCache.remove(key);
+//                }
+//            }
+//            res = true;
+//        }
+//        setJarFileNames2Close.clear();
+//        return res;
+//    }
 
     /**
      * Creates another classLoader that has the initial object as parent
@@ -278,7 +271,7 @@ public class JarClassLoader extends URLClassLoader{
         subInstance.addJarToClasspath(moduleJar);
         //Add any possible dependencies
         for (String file : bean.getRequiredLibs()) {
-            File libjar = new File(CoreCfg.contextRoot + File.separator + file);
+            File libjar = new File(CoreCfg.contextRoot + File.separator + "modules"+ File.separator + file);
             subInstance.addJarToClasspath(libjar);
         }
         

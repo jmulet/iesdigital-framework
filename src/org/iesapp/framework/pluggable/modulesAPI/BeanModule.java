@@ -19,7 +19,7 @@ import javax.imageio.ImageIO;
 import javax.swing.ImageIcon;
 import org.iesapp.framework.pluggable.DockingFrameworkApp;
 import org.iesapp.framework.pluggable.TopModuleWindow;
-import org.iesapp.framework.pluggable.deamons.BeanDeamon;
+import org.iesapp.framework.pluggable.daemons.BeanDaemon;
 import org.iesapp.framework.pluggable.pluginsAPI.BeanAnchorPoint;
 import org.iesapp.framework.pluggable.pluginsAPI.BeanDisplayPoint;
 import org.iesapp.framework.util.CoreCfg;
@@ -54,7 +54,7 @@ public class BeanModule {
     private HashMap<String, String> moduleNameBundle;  //Module display name with internationalization support
     protected ArrayList<String> requiredLibs;
     protected ArrayList<BeanModule> installedPlugins;
-    protected ArrayList<BeanDeamon> deamons;
+    protected ArrayList<BeanDaemon> deamons;
     protected final BeanMetaInf metaINF;
     protected HashMap<String, Object> iniParameters;
     protected HashMap<String, String> iniParametersDescription;
@@ -83,7 +83,7 @@ public class BeanModule {
         displayPoint.setLocation("topwindow");
         displayPoint.setParentId("");
         //
-        deamons = new ArrayList<BeanDeamon>();
+        deamons = new ArrayList<BeanDaemon>();
     }
 
     public String getJar() {
@@ -313,7 +313,8 @@ public class BeanModule {
 
 
         File jarfile = new File(CoreCfg.contextRoot + File.separator + "modules" + File.separator + getJar());
-
+        if(jarfile.exists())
+        {
         try {
 
             ZipFile jarf = new ZipFile(jarfile);
@@ -349,6 +350,7 @@ public class BeanModule {
             jarf.close();
         } catch (IOException ex) {
             Logger.getLogger(DockingFrameworkApp.class.getName()).log(Level.SEVERE, null, ex);
+        }
         }
         return moduleIcon;
     }
@@ -427,7 +429,7 @@ public class BeanModule {
         this.plugin = plugin;
     }
 
-    public ArrayList<BeanDeamon> getDeamons() {
+    public ArrayList<BeanDaemon> getDeamons() {
         return deamons;
     }
 

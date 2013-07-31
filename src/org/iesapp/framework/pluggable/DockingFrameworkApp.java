@@ -19,8 +19,11 @@ import java.awt.Container;
 import java.awt.Desktop;
 import java.awt.Font;
 import java.awt.Insets;
+import java.awt.Point;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.ComponentAdapter;
+import java.awt.event.ComponentEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.WindowAdapter;
@@ -29,6 +32,7 @@ import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.io.File;
 import java.io.IOException;
+import java.io.PrintStream;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -46,21 +50,27 @@ import javax.swing.JLabel;
 import javax.swing.JMenu;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
+import javax.swing.JScrollPane;
+import javax.swing.JSeparator;
+import javax.swing.JTextArea;
 import javax.swing.JToolBar;
 import javax.swing.KeyStroke;
 import javax.swing.LookAndFeel;
+import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
 import javax.swing.UIDefaults;
 import javax.swing.UIManager;
 import javax.swing.UIManager.LookAndFeelInfo;
+import javax.swing.text.BadLocationException;
 import org.iesapp.clients.sgd7.profesores.Profesores;
 import org.iesapp.framework.data.User;
+import org.iesapp.framework.dialogs.FrameworkUpdaterDlg;
 import org.iesapp.framework.dialogs.Login;
 import org.iesapp.framework.dialogs.LoginAdmin;
 import org.iesapp.framework.dialogs.LoginInterface;
 import org.iesapp.framework.dialogs.LoginValidation;
-import org.iesapp.framework.pluggable.deamons.BeanDeamon;
-import org.iesapp.framework.pluggable.deamons.TopModuleDeamon;
+import org.iesapp.framework.pluggable.daemons.BeanDaemon;
+import org.iesapp.framework.pluggable.daemons.TopModuleDaemon;
 import org.iesapp.framework.pluggable.modulesAPI.BeanModule;
 import org.iesapp.framework.pluggable.modulesAPI.ErrorDisplay;
 import org.iesapp.framework.pluggable.modulesAPI.GenericFactory;
@@ -72,7 +82,9 @@ import org.iesapp.framework.pluggable.preferences.UserPreferencesModule;
 import org.iesapp.framework.start.Start;
 import org.iesapp.framework.util.CoreCfg;
 import org.iesapp.framework.util.CoreIni;
+import org.iesapp.framework.util.CustomOutputStream;
 import org.iesapp.framework.util.JarClassLoader;
+import org.iesapp.updater.BeanDistroRepo;
 import org.iesapp.updater.RemoteUpdater;
 import org.iesapp.util.StringUtils;
 
@@ -116,6 +128,7 @@ public class DockingFrameworkApp extends JFrame implements Closable{
     protected final WindowManager windowManager;
     protected final String anuncisClassName = "org.iesapp.apps.anuncis.AnuncisApp";
     protected final VToolbar vtoolbar;
+    public static CustomOutputStream customOutputPrinter;
     
     
     /**
@@ -123,6 +136,14 @@ public class DockingFrameworkApp extends JFrame implements Closable{
      * @param args
      */
     public DockingFrameworkApp(String[] args) {
+        
+        //Redirect out and err to a custom printer
+        customOutputPrinter = new CustomOutputStream();
+        PrintStream printer = new PrintStream(customOutputPrinter, true);
+         
+        //System.setOut(printer);
+        //System.setErr(printer);
+        
        //Initialize core and creates a new istance of coreCfg 
        //Toolkit.getDefaultToolkit().setDynamicLayout(true);
        initializeCore(args);
@@ -168,9 +189,23 @@ public class DockingFrameworkApp extends JFrame implements Closable{
             public void windowClosing(WindowEvent e) {
                 formWindowClosing(e);
             }
-           
+         
        });
        
+       this.addComponentListener(new ComponentAdapter() {
+           //Make sure that it corresponds to the current view
+           @Override
+           public void componentResized(ComponentEvent e) {
+               if(getExtendedState()==JFrame.MAXIMIZED_BOTH){
+                   int displayMode = windowManager.getDisplayMode();
+                   if(displayMode!=WindowManager.MODE_MAXIMIZED)
+                   {
+                       windowManager.setDisplayMode(WindowManager.MODE_MAXIMIZED);
+                   }
+               }
+                
+           }
+       });
        //Help track and menu
        jButtonHT.addActionListener(new CSH.DisplayHelpAfterTracking(coreCfg.getMainHelpBroker()));
        jMenuItem2.addActionListener(new CSH.DisplayHelpFromSource(coreCfg.getMainHelpBroker()));  
@@ -423,6 +458,7 @@ public class DockingFrameworkApp extends JFrame implements Closable{
         jMenuFitxer.add(jMenuItem4);
         jMenuFitxer.add(jSeparator4);
 
+        jMenuItem6.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_P, java.awt.event.InputEvent.CTRL_MASK));
         jMenuItem6.setIcon(new javax.swing.ImageIcon(getClass().getResource("/org/iesapp/framework/icons/configIcon.gif"))); // NOI18N
         jMenuItem6.setText(bundle.getString("userPreferences")); // NOI18N
         jMenuItem6.addActionListener(new java.awt.event.ActionListener() {
@@ -489,6 +525,7 @@ public class DockingFrameworkApp extends JFrame implements Closable{
         jMenuIdioma.setText(bundle.getString("language")); // NOI18N
         jMenuWindow.add(jMenuIdioma);
 
+        jMenuItem1.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_4, java.awt.event.InputEvent.CTRL_MASK));
         jMenuItem1.setText(bundle.getString("logger")); // NOI18N
         jMenuItem1.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -559,9 +596,9 @@ public class DockingFrameworkApp extends JFrame implements Closable{
                         .addComponent(switchButton, javax.swing.GroupLayout.PREFERRED_SIZE, 23, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addComponent(jButtonHT, javax.swing.GroupLayout.PREFERRED_SIZE, 26, javax.swing.GroupLayout.PREFERRED_SIZE)))
                 .addGap(1, 1, 1)
-                .addComponent(jPanel1, javax.swing.GroupLayout.DEFAULT_SIZE, 233, Short.MAX_VALUE)
+                .addComponent(jPanel1, javax.swing.GroupLayout.DEFAULT_SIZE, 229, Short.MAX_VALUE)
                 .addGap(0, 0, 0)
-                .addComponent(jStatusBar, javax.swing.GroupLayout.PREFERRED_SIZE, 25, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addComponent(jStatusBar, javax.swing.GroupLayout.PREFERRED_SIZE, 29, javax.swing.GroupLayout.PREFERRED_SIZE))
         );
 
         pack();
@@ -574,7 +611,7 @@ public class DockingFrameworkApp extends JFrame implements Closable{
     //Initialize App
     public void initializeFramework()
     {
-        
+        DebugLogger.getInstance().addText("Initializing iesdigital framework "+CoreCfg.VERSION+"...");
         //Set Lookandfeel from the very begining
         //By default set systemLookandFeel
         String lookandfeel="Nimbus";
@@ -615,7 +652,7 @@ public class DockingFrameworkApp extends JFrame implements Closable{
             }
        
         } catch (Exception ex) {
-            DebugLogger.getInstance().addText(ex.toString());
+              Logger.getLogger(DockingFrameworkApp.class.getName()).log(Level.SEVERE, null, ex);              
         }
         
         
@@ -627,37 +664,39 @@ public class DockingFrameworkApp extends JFrame implements Closable{
                 uiFramework.setDistribution(i);
             }
         };
-                
-        ButtonGroup bg2 = new ButtonGroup();
-        for (int i = 0; i < UIFrameworkJR.MAXTabbedPanes; i++) {
-            JCheckBoxMenuItem item = new JCheckBoxMenuItem((i+1)+" finestres");
-            item.setActionCommand((i+1)+"");
-            item.addActionListener(distribucioListener);
-            KeyStroke keyStroke = KeyStroke.getKeyStroke("alt " + (i+1));
-            if (keyStroke != null) {
-                item.setAccelerator(keyStroke);
-            }
-            bg2.add(item);
-            if (i == 0) {
-                item.setSelected(true);
-            }
-            jMenuDistribucio.add(item);
-       }
+        
+       
         
        this.setTitle("iesDigital " + CoreCfg.VERSION + "   ·   " + appDisplayName +"   ·   "+coreCfg.anyAcademic+"-"+(coreCfg.anyAcademic+1));
       
+        
        
        try {
             genericFactory = new GenericFactory(appClass.getName(), requiredModuleName, requiredJar);
         } catch (Exception ex) {
-            DebugLogger.getInstance().addText(ex.toString());
+            //This is a grave error and must exit application
+            JScrollPane scrollPane = new JScrollPane();
+            JTextArea area = new JTextArea();
+            area.setWrapStyleWord(true);
+            area.setLineWrap(true);
+            area.setAutoscrolls(true);
+            area.setSize(300, 200);
+            scrollPane.setViewportView(area);
+            String msg = "Error parsing file config/"+this.appClass.getName().replaceAll("\\.","-")+".xml\n"+ex+
+                    "\nApplication will quit.";
+            area.setText(msg);
+            JOptionPane.showMessageDialog(javar.JRDialog.getActiveFrame(), scrollPane, "GRAVE", JOptionPane.ERROR_MESSAGE);
+            this.exitApp();
         }
-        windowManager.setProperties(genericFactory.getApplicationInitParameters());
-      
+       
          //Initialize your desired framework here
        uiFramework = (UIFramework) new UIFrameworkIN(coreCfg, stamper, stray, jToggleButton1);
        uiFramework.initialize(windowManager, appDisplayName, beforeMenu, afterMenu, this.appClass.getName());
        
+      
+       windowManager.setProperties(genericFactory.getApplicationInitParameters());
+      
+      
         //// set application display parameters
            
         //Apply application attributes
@@ -784,25 +823,9 @@ public class DockingFrameworkApp extends JFrame implements Closable{
     }//GEN-LAST:event_jMenuItem5ActionPerformed
 
     private void jMenuItem1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem1ActionPerformed
-        //opens a logger
-        if (coreCfg.getUserInfo().getGrant() != User.ADMIN) {
-            LoginAdmin dlg = new LoginAdmin(this, true);
-            dlg.setLocationRelativeTo(null);
-            dlg.setVisible(true);
-            if (dlg.getValidation() != 1) {
-                return;
-            }
-        }
-
-        //First check if logger is already instantiated
-        ArrayList<String> instances = TopModuleRegistry.getCurrentInstancesOf(LoggerModule.class.getName());
-        if (instances.isEmpty()) {
-            LoggerModule loggerModule = new LoggerModule(coreCfg);
-            loggerModule.setName("logger");
-            uiFramework.addTopModuleWindow(loggerModule, "bottom", true, false);
-        }
-
-
+       
+        ensureLoggerVisible();
+               
     }//GEN-LAST:event_jMenuItem1ActionPerformed
 
     private void jMenuItem6ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem6ActionPerformed
@@ -867,18 +890,18 @@ public class DockingFrameworkApp extends JFrame implements Closable{
  
      /**
       * Adds new Module 
-      * Make sure that class is in the classpath
-      * @param className className of the module which must extend TopModuleWindow 
+      * Make sure that class is in the classpath 
       */
   
     public void loadModules()
     {   
         //Stop all deamons
-        DebugLogger.getInstance().addText("Start loadModules...");
-        jToolBarModules.removeAll();
+        DebugLogger.getInstance().addText("Loading modules...");
+        jToolBarModules.removeAll(); 
+        jToolBarModules.add(new JSeparator(SwingConstants.VERTICAL));
+        jToolBarModules.add(new JSeparator(SwingConstants.VERTICAL));
          
         jToolBarModules.add(switchButton);
-        DebugLogger.getInstance().addText("TopModuleRegistry.reset()...");
         TopModuleRegistry.reset();
         
         if(iWasAdmin)
@@ -926,7 +949,7 @@ public class DockingFrameworkApp extends JFrame implements Closable{
             //Deamons (activate them)
             if(user!=null && !user.isEmpty())
             {
-            for(BeanDeamon beandeamon: module.getDeamons())
+            for(BeanDaemon beandeamon: module.getDeamons())
             {
                  if(!beandeamon.isEnabled() || (!beandeamon.getRoles().contains("*") &&
                          !beandeamon.getRoles().contains(coreCfg.getUserInfo().getRole())))
@@ -936,29 +959,29 @@ public class DockingFrameworkApp extends JFrame implements Closable{
 
                 JarClassLoader deamonClassLoader = JarClassLoader.getInstance().getSubInstance(module);
                 try {
-                    TopModuleDeamon deamon = null;
-                    if(TopModuleDeamon.getActiveDeamons().containsKey(beandeamon.getDeamonClassName()+"@"+user))
+                    TopModuleDaemon deamon = null;
+                    if(TopModuleDaemon.getActiveDeamons().containsKey(beandeamon.getDeamonClassName()+"@"+user))
                     {
-                        deamon = TopModuleDeamon.getActiveDeamons().get(beandeamon.getDeamonClassName()+"@"+user);
+                        deamon = TopModuleDaemon.getActiveDeamons().get(beandeamon.getDeamonClassName()+"@"+user);
                     }
                     else
                     {
                         Class<?> forName =deamonClassLoader.loadClass(beandeamon.getDeamonClassName());
-                        deamon = (TopModuleDeamon) forName.newInstance();
+                        deamon = (TopModuleDaemon) forName.newInstance();
                         deamon.initialize(coreCfg);
 
-                        TopModuleDeamon.getActiveDeamons().put(forName.getName()+"@"+user, deamon);
+                        TopModuleDaemon.getActiveDeamons().put(forName.getName()+"@"+user, deamon);
 
                         deamon.setDeamon(beandeamon);
                         deamon.setModuleClassName(module.getClassName());
                         deamon.start(beandeamon.getTimeInMillis());
-                        //System.out.println("ACTIVATED DEAMON "+deamon.getDeamon().getDeamonClassName());
+                        DebugLogger.getInstance().addText("Deamon activated "+deamon.getDeamon().getDeamonClassName());
                     }
                     deamon.addPropertyChangeListener(new PropertyChangeListener() {
                         @Override
                         public void propertyChange(PropertyChangeEvent evt) {
                             System.out.println(evt);
-                            TopModuleDeamon deamon = (TopModuleDeamon) evt.getSource();
+                            TopModuleDaemon deamon = (TopModuleDaemon) evt.getSource();
                             String cn = deamon.getModuleClassName(); 
                             if(deamon.getDeamon().isShowMessage())
                             {
@@ -1024,20 +1047,76 @@ public class DockingFrameworkApp extends JFrame implements Closable{
             }
             
         }
-       
+
+        jToolBarModules.add(new JSeparator(SwingConstants.VERTICAL));
+        jToolBarModules.add(new JSeparator(SwingConstants.VERTICAL));
+        //Now all modules have been loaded. Depending on the number of modules loaded, show them in
+        //an appropiate display mode. User may have imposed a preferred mode.
+        
+        //Check "framework.startupPolicy" --> AUTO OR ONE MODE IMPOSED BY USER
+        String property = coreCfg.getUserPreferences().getProperty("framework.startupPolicy", "AUTO").toUpperCase(); //TOOLBAR, NORMAL, EXTENDED_STATE
+        int turnToMode = WindowManager.MODE_NORMAL;
+        if(property.equals("TOOLBAR"))
+        {
+            jToggleButton1.setSelected(true);
+            turnToMode = WindowManager.MODE_TOOLBAR;
+        }
+        else if(property.equals("NORMAL"))
+        {
+            turnToMode = WindowManager.MODE_NORMAL;
+        }
+        else if(property.equals("EXTENDED"))
+        {
+            turnToMode = WindowManager.MODE_MAXIMIZED;
+        }
+        else    //This is the automatic mode
+        {
+            //More than two modules --> EXTENDED_STATE 
+            //One module which is the requiredOne
+            //Make sure required module is not in sleep mode otherwise minimize ui
+            int count = TopModuleRegistry.getCount();
+            System.out.println(" Auto mode, count = "+count);
+            if(count<=0)
+            {
+                 turnToMode = WindowManager.MODE_NORMAL;
+            }
+            else if(count>1)
+            {
+                turnToMode = WindowManager.MODE_MAXIMIZED;    
+            }
+            else //only one module and it must be the requiredOne
+            {
+                ArrayList<String> instancesIDs = TopModuleRegistry.getCurrentInstancesOf(requiredModuleName);
+                TopModuleWindow win = TopModuleRegistry.findId(instancesIDs.get(0));
+
+                if (win != null) {
+                    if (win.getModuleStatus() == TopModuleWindow.STATUS_SLEEPING) {
+                          jToggleButton1.setSelected(true);
+                          turnToMode = WindowManager.MODE_TOOLBAR;
+                    } else {
+                        if (appClass.getName().equals(anuncisClassName)) {
+                           turnToMode = WindowManager.MODE_SIMPLE;
+                        }
+                    }
+                } 
+                 
+            }
+        }
+        DebugLogger.getInstance().addText("WindowManager initial display mode set to "+ turnToMode);
+        windowManager.setDisplayMode(turnToMode);
+        
     }
-     
+
     /**
-     * Every module icon must be named after its module name
-     * in this way, it can be reachable in order to change
-     * the status of the icon
+     * Every module icon must be named after its module name in this way, it can
+     * be reachable in order to change the status of the icon
+     *
      * @param modulename
      * @return E
      */
     private JButton findLinkButtonByName(Container container, String modulename)
     {
-        System.out.println("trying to find "+modulename);
-        JButton button= null;
+         JButton button= null;
         
         for (Component comp : container.getComponents()) {
              
@@ -1081,8 +1160,8 @@ public class DockingFrameworkApp extends JFrame implements Closable{
             }
         };
 
-        DebugLogger.getInstance().addText(" @ Loading modules....");
-        DebugLogger.getInstance().addText(" @ Dealing with.... module " + module.getClassName());
+        
+        DebugLogger.getInstance().addText("\tInstalling module " + module.getClassName());
         boolean mustskip = moduleLoadPref.equals("required") && !module.getClassName().equals(requiredModuleName);
         if (mustskip) {
             return;
@@ -1096,34 +1175,10 @@ public class DockingFrameworkApp extends JFrame implements Closable{
         }
 
         if (module.getAutoStart() != BeanModule.NO) {
-            DebugLogger.getInstance().addText(" @ Trying to open via uiFramework.addTopModuleWindow " + module.getClassName());
-            
             //Problem after module is added it calls adjustframework
             //and after that checks if ui must be minimized... 
             //solution: add third parameter boolean true/false if adjustFramework must be called or not
-            String winID = this.uiFramework.addTopModuleWindow(module, false, false);
-            TopModuleWindow win = null;
-            //Make sure required module is not is sleep mode otherwise minimize ui
-            if(winID!=null && module.getClassName().equals(requiredModuleName))
-            {
-                //Check if user has specified preferred startup policy
-               win = TopModuleRegistry.findId(winID);
-               String property = coreCfg.getUserPreferences().getProperty("framework.startupPolicy", "NORMAL"); //TOOLBAR
-               if (!property.equalsIgnoreCase("TOOLBAR")) {
-                    if (win != null && win.getModuleStatus() == TopModuleWindow.STATUS_SLEEPING) {
-                        jToggleButton1.setSelected(true);
-                        windowManager.setDisplayMode(WindowManager.MODE_TOOLBAR);
-                    } else {
-                        if (appClass.getName().equals(anuncisClassName)) {
-                            windowManager.setDisplayMode(WindowManager.MODE_SIMPLE);
-                        }
-                    }
-                } else {
-                    jToggleButton1.setSelected(true);
-                    windowManager.setDisplayMode(WindowManager.MODE_TOOLBAR);
-                }
-            }
-
+            String winID = this.uiFramework.addTopModuleWindow(module, false, false);            
         }
 
         //Add link to respective anchor points
@@ -1366,17 +1421,17 @@ public class DockingFrameworkApp extends JFrame implements Closable{
          
             if (user != null && !user.isEmpty()) {
                 ArrayList<String> tobeRemoved = new ArrayList<String>();
-                for (String key : TopModuleDeamon.getActiveDeamons().keySet()) {
+                for (String key : TopModuleDaemon.getActiveDeamons().keySet()) {
                     if (key.endsWith("@" + user)) {
                         tobeRemoved.add(key);
-                        TopModuleDeamon.getActiveDeamons().get(key).stop();
+                        TopModuleDaemon.getActiveDeamons().get(key).stop();
                         //This yields to concurrent exception
                         //TopModuleDeamon.getActiveDeamons().remove(key);
                     }
                 }
                 for(String key: tobeRemoved)
                 {
-                    TopModuleDeamon.getActiveDeamons().remove(key);
+                    TopModuleDaemon.getActiveDeamons().remove(key);
                 }
                 tobeRemoved.clear();
                     
@@ -1702,6 +1757,22 @@ public class DockingFrameworkApp extends JFrame implements Closable{
         }
         return newButton;
      }
+
+    private void ensureLoggerVisible() {
+        //First check if logger is already instantiated
+        ArrayList<String> instances = TopModuleRegistry.getCurrentInstancesOf(LoggerModule.class.getName());
+        if (instances.isEmpty()) {
+            LoggerModule loggerModule = new LoggerModule();
+            loggerModule.initialize(stamper, stray, coreCfg, uiFramework);
+            loggerModule.setName("logger");
+            loggerModule.refreshUI();
+            uiFramework.addTopModuleWindow(loggerModule, "bottom", true, false);
+        }
+        else
+        {
+            //Make it visible...
+        }
+    }
      
      
     protected class UpdateTask extends javax.swing.SwingWorker<Void,Void>
@@ -1712,21 +1783,36 @@ public class DockingFrameworkApp extends JFrame implements Closable{
         
         try {
             //Do updater check in background
-            RemoteUpdater updater = new RemoteUpdater(CoreIni.getCore_repoURLs());
+            final RemoteUpdater updater = new RemoteUpdater(CoreIni.getCore_repoURLs());
             String latestVersion = updater.getLatestVersion();
             
-            if(StringUtils.compare(latestVersion, CoreCfg.VERSION)>0)
+            if(StringUtils.compare(updater.getModulesRepo().getLastDistroVersion(), CoreCfg.VERSION)>0)
             {
                 JLinkButton label = new JLinkButton();
                 label.setIcon(new ImageIcon(getClass().getResource("/org/iesapp/framework/icons/bubble1.png")));
                 label.setText("New version "+latestVersion);      
                 ((StatusBarZone) DockingFrameworkApp.this.jStatusBar.getZone("second")).addComponent(label);
-                label.addMouseListener(new MouseAdapter() {
-                    @Override
-                    public void mouseClicked(MouseEvent e) {
-                        System.out.println("DO SOMETHING");
-                    }
+                label.addActionListener(new ActionListener() {
+                    private FrameworkUpdaterDlg frameworkUdaterDlg;
 
+                    @Override
+                    public void actionPerformed(ActionEvent e) {
+                        JLinkButton lbutton = (JLinkButton) e.getSource();
+                        if(frameworkUdaterDlg==null)
+                        {
+                            BeanDistroRepo lastDistroBean = updater.getModulesRepo().getLastDistroBean();
+                            String whatsNew = updater.getWhatsNew();
+                            frameworkUdaterDlg = new FrameworkUpdaterDlg(DockingFrameworkApp.this, true, lastDistroBean,
+                                    whatsNew, appClass.getName(), uiFramework);
+                             Point loc = lbutton.getLocationOnScreen();
+                             frameworkUdaterDlg.setLocation(loc.x, loc.y-frameworkUdaterDlg.getHeight()-5);
+                             frameworkUdaterDlg.setVisible(true);
+                        }
+                        else
+                        {
+                            frameworkUdaterDlg.setVisible(true);
+                        }
+                    }
                 });
             }
             uiFramework.setRemoteUpdater( updater );

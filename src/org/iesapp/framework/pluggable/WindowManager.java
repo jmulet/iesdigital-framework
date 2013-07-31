@@ -229,8 +229,8 @@ public class WindowManager {
                 
             case MODE_MAXIMIZED:
                 vtoolbar.setVisible(false);
-                switchButton.setVisible(false);
                 frame.setVisible(true);
+                switchButton.setVisible(false);
                 jToggleButton1.setSelected(false);
                 jButtonHT.setVisible(true);
                 mainPanel.setVisible(true);

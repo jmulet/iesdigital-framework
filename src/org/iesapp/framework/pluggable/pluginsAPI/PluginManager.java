@@ -433,11 +433,10 @@ public class PluginManager extends javar.JRDialog {
                 File[] listFiles1 = f.listFiles();
                 for(File f1: listFiles1)
                 {
-                    File tmp = new File(CoreCfg.contextRoot+File.separator+"lib"+File.separator+f1.getName());
+                    File tmp = new File(CoreCfg.contextRoot+File.separator+"modules"+File.separator+"lib"+File.separator+f1.getName());
                     if(!tmp.exists())
                     {
                             FileUtils.copyFile(f1, tmp);
-                       
                     }
                     pluginList.get(0).getRequiredLibs().add("lib"+File.separator+f1.getName());
                 }
@@ -459,7 +458,7 @@ public class PluginManager extends javar.JRDialog {
                     bip.setJar(realName);
                 }
             }
-            else if(f.isFile() && f.getAbsolutePath().endsWith(".ini"))
+            else if(f.isFile() && (f.getAbsolutePath().endsWith(".ini") || f.getAbsolutePath().endsWith(".xml") ))
             {
                 //copy plugin initializaton
                 FileUtils.copyFile(f, new File(CoreCfg.contextRoot+File.separator+"config"+File.separator+f.getName()));

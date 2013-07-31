@@ -36,7 +36,7 @@ public class Stamp {
         this.coreCfg = coreCfg;
         this.appNameId = appNameId;
         this.abrev = abrev;
-        mapModuleActions = new HashMap<String,ArrayList<String>>();
+        
         initialized = true;
     }
     
@@ -65,17 +65,17 @@ public class Stamp {
            return -1;
        } 
         StringBuilder builder = new StringBuilder();
-        for(String key: mapModuleActions.keySet())
+        for(String key: getMapModuleActions().keySet())
         {
-            builder.append(key).append(" : ").append(mapModuleActions.get(key).toString()).append("\n");
-            mapModuleActions.get(key).clear();
+            builder.append(key).append(" : ").append(getMapModuleActions().get(key).toString()).append("\n");
+            getMapModuleActions().get(key).clear();
         }
                 
         String SQL1 = "UPDATE `"+CoreCfg.core_mysqlDB+"`.sig_log SET fi=NOW(), resultat=? where id="+getPid();
         int nup = coreCfg.getMysql().preparedUpdate(SQL1, new Object[]{builder.toString()});
         //System.out.println("outstamp "+nup+" ");
         setPid(-1);
-        mapModuleActions.clear();
+        getMapModuleActions().clear();
         initialized = false;
         return nup;
         //id=0;//assegura que només es crida un pic a la subrutina
@@ -87,13 +87,13 @@ public class Stamp {
     * @param string 
     */
     public void addAction(String module, String string) {
-       if(!mapModuleActions.containsKey(module))
+       if(!getMapModuleActions().containsKey(module))
        {
            addModule(module);
        }
          
-        if(!mapModuleActions.get(module).contains(string)) {
-            mapModuleActions.get(module).add(string);
+        if(!getMapModuleActions().get(module).contains(string)) {
+            getMapModuleActions().get(module).add(string);
         }
     }
 
@@ -126,14 +126,23 @@ public class Stamp {
      * @param moduleName 
      */
     public void addModule(String moduleName) {
-        if(!mapModuleActions.containsKey(moduleName))
+        
+        if(!getMapModuleActions().containsKey(moduleName))
         {
-            mapModuleActions.put(moduleName, new ArrayList<String>());
+            getMapModuleActions().put(moduleName, new ArrayList<String>());
         }
     }
 
     public boolean isInitialized() {
         return initialized;
+    }
+
+    public HashMap<String,ArrayList<String>> getMapModuleActions() {
+        if(mapModuleActions==null)
+        {
+            mapModuleActions = new HashMap<String,ArrayList<String>>();
+        }
+        return mapModuleActions;
     }
             
 }

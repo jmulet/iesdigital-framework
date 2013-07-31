@@ -114,7 +114,6 @@ public class UIFrameworkIN implements UIFramework{
   
             boolean alreadyInstanced = false;
             ArrayList<String> ninstances = TopModuleRegistry.getCurrentInstancesOf(module.getClassName());
-            DebugLogger.getInstance().addText("NUM instances of class "+module.getClassName()+" = "+ninstances.size());
             if(ninstances.size()>0)            
             {
                     alreadyInstanced = true;                    
@@ -159,26 +158,20 @@ public class UIFrameworkIN implements UIFramework{
                     }
             }
             
-            DebugLogger.getInstance().addText("module ismultipleinstance --> "+module.isMultipleInstance());
             if(!alreadyInstanced || (alreadyInstanced && module.isMultipleInstance()) )
             {
-                DebugLogger.getInstance().addText("CREATING::::");
-                
-                DebugLogger.getInstance().addText("Trying to find class for module :: "+module.getClassName());
                 JarClassLoader moduleClassLoader = JarClassLoader.getInstance().getSubInstance(module);
                 Class<?> forName = moduleClassLoader.loadClass(module.getClassName());
-                DebugLogger.getInstance().addText("Creating a new instance of module :: "+module.getClassName());
+                DebugLogger.getInstance().addText("\tCreating a new instance of module :: "+module.getClassName());
                 TopModuleWindow win = (TopModuleWindow) forName.newInstance();
                 
                 //Pass bean & ini parameters & initialize with moduleClassLoader
                 win.setBeanModule(module);
                 win.setModuleClassLoader(moduleClassLoader);
-                DebugLogger.getInstance().addText("@@@@@ The module "+module.getClassName()+" contains #plugins "+module.getInstalledPlugins().size());
+                DebugLogger.getInstance().addText("\tModule "+module.getClassName()+" contains "+module.getInstalledPlugins().size()+" plugins");
                 win.iniParameters.setMap( module.getIniParameters() );
-                DebugLogger.getInstance().addText("@@@@@ initializing The module "+module.getClassName());
                 win.initialize(stamper, stray, coreCfg, (UIFramework) this);
-                DebugLogger.getInstance().addText("...Done");
-                DebugLogger.getInstance().addText("...is opening required? "+win.isOpeningRequired());
+                DebugLogger.getInstance().addText("\tModule "+module.getClassName()+" initialized");
                 
                 win.setMultipleInstance(module.isMultipleInstance());
                 
@@ -186,9 +179,7 @@ public class UIFrameworkIN implements UIFramework{
                 {                     
                     
                     String displayname = module.getNameForLocale(coreCfg.core_lang);
-                    DebugLogger.getInstance().addText("Process win.refreshUI()...");
                     
-
                     if (module.getDisplayPoint().getLocation().equals("statusbar")) {
                         ((StatusBarZone) jStatusBar1.getZone("second")).addComponent(win);
                     } else if (module.getDisplayPoint().getLocation().equals("topwindow")) {
@@ -210,8 +201,7 @@ public class UIFrameworkIN implements UIFramework{
                     }
 
                     win.refreshUI();
-                    DebugLogger.getInstance().addText("...done win.refreshUI()!");
-                    
+                     
                 } else {
                     win.dispose();
                 }
@@ -221,7 +211,7 @@ public class UIFrameworkIN implements UIFramework{
             Logger.getLogger(DockingFrameworkApp.class.getName()).log(Level.SEVERE, null, ex);
             JOptionPane.showMessageDialog(javar.JRDialog.getActiveFrame(), "Problem loading module: "+module.getClassName()+"\n"+ex);
         }
-        DebugLogger.getInstance().addText(">>>>> quit UIFrameworkJR.addTopModuleWindow");
+        
         return id;
    
     }
@@ -255,17 +245,23 @@ public class UIFrameworkIN implements UIFramework{
                     viewMap.removeView(win.getName());
                     rootWindow.remove(view.getParent());
                     TopModuleRegistry.remove(win.getName());
-                    win.dispose();                    
+                    //win.dispose();      
+                    win = null;
                 }    
             }
             
         }
      
-        for(int i=0; i<rootWindow.getChildWindowCount(); i++)
-        {
-            DockingWindow childWindow = rootWindow.getChildWindow(i);
-            childWindow.close();
-        }
+//        for(int i=0; i<rootWindow.getChildWindowCount(); i++)
+//        {
+//            DockingWindow childWindow = rootWindow.getChildWindow(i);
+//            childWindow.close();
+//        }
+        
+        //Reset rootWindow
+        viewMap = new StringViewMap();
+        rootWindow.setWindow(new TabWindow());
+        
         //System.gc();
     }
 
@@ -313,8 +309,6 @@ public class UIFrameworkIN implements UIFramework{
                 String className = StringUtils.noNull(beanModule.getClassName());
                 String lastVersionForModule = remoteUpdater.getModulesRepo().getLastVersionForModule(className);
                 
-                //System.out.println("Comparispj of "+lastVersionForModule+ " " + beanModule.getBeanMetaINF().getVersion());
-                
                 if(lastVersionForModule!=null && StringUtils.compare(lastVersionForModule, beanModule.getBeanMetaINF().getVersion())>0)
                 {
                     final JLinkButton lbutton = new JLinkButton("New "+win.moduleDisplayName+" "+ lastVersionForModule);
@@ -332,8 +326,18 @@ public class UIFrameworkIN implements UIFramework{
                             }
                             else
                             {
+                                //Try to get current installed version of this module
                                 String installedVersion = "";
-                              
+                                ArrayList<String> instancesIDs = TopModuleRegistry.getCurrentInstancesOf(className);
+                                if(!instancesIDs.isEmpty())
+                                {
+                                    TopModuleWindow win = TopModuleRegistry.findId(instancesIDs.get(0));
+                                    if(win.getBeanModule()!=null)
+                                    {
+                                        installedVersion = win.getBeanModule().getBeanMetaINF().getVersion();
+                                    }
+                                }
+                                
                                 ModuleUpdaterDlg dlg = new ModuleUpdaterDlg(javar.JRDialog.getActiveFrame(), false,
                                          installedVersion, remoteUpdater.getModulesRepo().getRepoForModule(className), currentAppClass, UIFrameworkIN.this);
                                 Point loc = lbutton.getLocationOnScreen();
@@ -466,7 +470,7 @@ public class UIFrameworkIN implements UIFramework{
         rootWindow.getRootWindowProperties().setRecursiveTabsEnabled(false);
         properties.getDockingWindowProperties().setCloseEnabled(false); //Disable massive close
         rootWindow.getRootWindowProperties().addSuperObject(properties);
-
+        
         // Enable the bottom window bar
         rootWindow.getWindowBar(Direction.LEFT).setEnabled(true);
 
@@ -520,7 +524,7 @@ public class UIFrameworkIN implements UIFramework{
                             System.out.println("About to close win  with id " + id + " win .." + win);
                             windowManager.adjustFrameworkLayout(-1);
                             TopModuleRegistry.remove(id);
-                            win.dispose();
+                            win = null;
                             //Remove this view from map
                             viewMap.removeView(id);
                         }
@@ -536,11 +540,10 @@ public class UIFrameworkIN implements UIFramework{
                         if(win!=null)
                         {
                             String id = win.getName();
-                            System.out.println("About to close win  with id " + id + " win .." + win);
                             windowManager.adjustFrameworkLayout(-1);
                             TopModuleRegistry.remove(id);
-                            win.dispose();
                             viewMap.removeView(id);
+                            win = null;
                         }
 
                     }

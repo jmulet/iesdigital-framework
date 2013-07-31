@@ -16,6 +16,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.Timer;
 import org.iesapp.framework.util.CoreCfg;
+import org.iesapp.framework.util.JarClassLoader;
 
 /**
  *
@@ -67,8 +68,8 @@ public class ReportFactory {
 
                         suitableTitle = task.m_path;
                         //This to show an internalFrame
-                        Class<?> classJRViewer = Class.forName("net.sf.jasperreports.swing.JRViewer");
-                        Class<?> classJasperPrint = Class.forName("net.sf.jasperreports.engine.JasperPrint");
+                        Class<?> classJRViewer = JarClassLoader.getInstance().loadClass("net.sf.jasperreports.swing.JRViewer");
+                        Class<?> classJasperPrint = JarClassLoader.getInstance().loadClass("net.sf.jasperreports.engine.JasperPrint");
                         Constructor<?> constructor = classJRViewer.getConstructor(classJasperPrint);
                         newViewerInstance = constructor.newInstance(printInstance);
                         Method method = classJRViewer.getMethod("setZoomRatio", float.class);
@@ -143,7 +144,7 @@ public class ReportFactory {
             try {
                 printInstance = null;
                 //crea la base de dades
-                Class<?> classDataSource = Class.forName("net.sf.jasperreports.engine.data.JRBeanCollectionDataSource");
+                Class<?> classDataSource = JarClassLoader.getInstance().loadClass("net.sf.jasperreports.engine.data.JRBeanCollectionDataSource");
                 Constructor<?> constructor = classDataSource.getConstructor(Collection.class);
                 Object instanceDs = constructor.newInstance(m_aux);
                 
@@ -158,8 +159,8 @@ public class ReportFactory {
 
                 //carrega directament el fitxer compilat
                 //System.out.println("carregant "+m_path);
-                Class<?> classJasperReport = Class.forName("net.sf.jasperreports.engine.JasperReport");
-                Class<?> classJasperLoader = Class.forName("net.sf.jasperreports.engine.util.JRLoader");
+                Class<?> classJasperReport = JarClassLoader.getInstance().loadClass("net.sf.jasperreports.engine.JasperReport");
+                Class<?> classJasperLoader = JarClassLoader.getInstance().loadClass("net.sf.jasperreports.engine.util.JRLoader");
                 Method methodLoader = classJasperLoader.getMethod("loadObject", java.io.File.class);
                 Object instanceReport = methodLoader.invoke(null, new java.io.File(m_path));
                
@@ -169,8 +170,8 @@ public class ReportFactory {
                 //A qualsevol report li pas el directori complet
                 m_map.put("SUBREPORT_DIR",CoreCfg.contextRoot+"\\reports\\");
              
-                Class<?> classJRDataSource = Class.forName("net.sf.jasperreports.engine.JRDataSource");
-                Class<?> classJasperFillManager = Class.forName("net.sf.jasperreports.engine.JasperFillManager");
+                Class<?> classJRDataSource = JarClassLoader.getInstance().loadClass("net.sf.jasperreports.engine.JRDataSource");
+                Class<?> classJasperFillManager = JarClassLoader.getInstance().loadClass("net.sf.jasperreports.engine.JasperFillManager");
                 Method method1 = classJasperFillManager.getMethod("fillReport", new Class[]{classJasperReport, Map.class, classJRDataSource});
                 printInstance = method1.invoke(null, new Object[]{instanceReport, m_map, instanceDs});
                 //print = JasperFillManager.fillReport(report, m_map, ds);
@@ -193,7 +194,7 @@ public class ReportFactory {
         Object obj = null;
         try {
             Class<?> classDataSource;
-            classDataSource = Class.forName("net.sf.jasperreports.engine.data.JRBeanCollectionDataSource");
+            classDataSource = JarClassLoader.getInstance().loadClass("net.sf.jasperreports.engine.data.JRBeanCollectionDataSource");
             Constructor<?> constructor = classDataSource.getConstructor(Collection.class);
             obj = constructor.newInstance(list);
            

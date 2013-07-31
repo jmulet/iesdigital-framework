@@ -6,13 +6,16 @@ package org.iesapp.framework.pluggable.modulesAPI;
 
 import com.sun.org.apache.xml.internal.serialize.OutputFormat;
 import com.sun.org.apache.xml.internal.serialize.XMLSerializer;
+import java.awt.HeadlessException;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
+import java.net.URISyntaxException;
 import java.net.URL;
+import java.net.URLClassLoader;
 import java.security.CodeSource;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -20,10 +23,11 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
+import javax.swing.JOptionPane;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
-import org.iesapp.framework.pluggable.deamons.BeanDeamon;
+import org.iesapp.framework.pluggable.daemons.BeanDaemon;
 import org.iesapp.framework.pluggable.pluginsAPI.BeanAnchorPoint;
 import org.iesapp.framework.util.CoreCfg;
 import org.w3c.dom.CharacterData;
@@ -562,7 +566,7 @@ public class GenericFactory {
                 NodeList childNodes1 = ((Element)childNodes.item(k)).getElementsByTagName("deamon");
                 for(int r=0; r<childNodes1.getLength(); r++)
                 {
-                    BeanDeamon deamon = new BeanDeamon();
+                    BeanDaemon deamon = new BeanDaemon();
                     deamon.setAttributes(childNodes1.item(r).getAttributes());
                     bean.getDeamons().add(deamon);
                 }
@@ -730,7 +734,7 @@ public class GenericFactory {
         if(bip.getDeamons().size()>0)
         {
           Element deamons = doc.createElement("deamons");   
-          for(BeanDeamon bd: bip.getDeamons())
+          for(BeanDaemon bd: bip.getDeamons())
           {
               Element deamon = doc.createElement("deamon"); 
               deamon.setAttribute("class", bd.getDeamonClassName());
@@ -1045,10 +1049,18 @@ public class GenericFactory {
             return;
         }
         try {
-            //We first need to add to classpath
-            org.iesapp.framework.util.JarClassLoader.getInstance().addToClasspath(new File(CoreCfg.contextRoot+"\\modules\\"+requiredJar));
+            //We first need to add to classpath but do it in a separate classLoader
+            
+            File f = new File(CoreCfg.contextRoot+"\\modules\\"+requiredJar);
            
-            Class<?> forName = Class.forName(requiredModuleName, false, org.iesapp.framework.util.JarClassLoader.getInstance());
+            if(!f.exists())
+            {
+                JOptionPane.showMessageDialog(null, "Can't locate required module file\n"+f.getAbsolutePath(), "Jar not found", JOptionPane.ERROR_MESSAGE);
+                System.exit(0);
+            }
+            URL[] urls = new URL[]{f.toURI().toURL()};
+            URLClassLoader loader = new URLClassLoader( urls, ClassLoader.getSystemClassLoader());
+            Class<?> forName = loader.loadClass(requiredModuleName);
             URL location = forName.getProtectionDomain().getCodeSource().getLocation();
             File file = new File(location.toURI());
             InputStream stream = null;
@@ -1078,7 +1090,14 @@ public class GenericFactory {
                 this.genericWriter(nodeApp, loadModule, MODULE);
                 
             }
-        } catch (Exception ex) {
+        } catch (HeadlessException ex) {
+            Logger.getLogger(GenericFactory.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (IOException ex) {
+            Logger.getLogger(GenericFactory.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (ClassNotFoundException ex) {
+             JOptionPane.showMessageDialog(null, "Can't found required module class \n"+requiredModuleName, "Class not found", JOptionPane.ERROR_MESSAGE);
+             System.exit(0);           
+        } catch (URISyntaxException ex) {
             Logger.getLogger(GenericFactory.class.getName()).log(Level.SEVERE, null, ex);
         }
     }

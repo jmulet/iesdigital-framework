@@ -8,6 +8,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.net.MalformedURLException;
 import java.util.Locale;
 import java.util.Properties;
 import java.util.logging.Level;
@@ -109,12 +110,18 @@ public class CoreIni {
         {
             JOptionPane.showMessageDialog(null, "Can't find client specified in config/core.ini: \n"+file2.getAbsolutePath(), "GRAVE", JOptionPane.ERROR_MESSAGE);
             closable.quitApp();
-        }        
-        //System.out.println("cccc");
-        JarClassLoader.getInstance().addToClasspath(file1);
-        JarClassLoader.getInstance().addToClasspath(file2);
-        //System.out.println("ddd");
+        }   
         
+        //Add clients to the classLoader which loaded this class
+        //This is done via reflection
+        try {
+           JarClassLoader.addURLToClassLoader(getClass().getClassLoader(), file1.toURI().toURL());
+           JarClassLoader.addURLToClassLoader(getClass().getClassLoader(), file2.toURI().toURL());
+        } catch (MalformedURLException ex) {
+            Logger.getLogger(CoreIni.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        
+       
         //Now CoreCfg is accesible for static members since libs are loaded
         CoreCfg.contextRoot = contextRoot;
         CoreCfg.core_PRODUCTID = core_PRODUCTID;

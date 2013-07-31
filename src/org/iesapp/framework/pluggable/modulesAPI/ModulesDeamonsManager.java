@@ -4,7 +4,7 @@
  */
 package org.iesapp.framework.pluggable.modulesAPI;
 
-import org.iesapp.framework.pluggable.deamons.BeanDeamon;
+import org.iesapp.framework.pluggable.daemons.BeanDaemon;
 import java.util.ArrayList;
 import javax.swing.DefaultListModel;
 import javax.swing.event.TableModelEvent;
@@ -18,19 +18,19 @@ import javax.swing.table.DefaultTableModel;
 public class ModulesDeamonsManager extends javar.JRDialog {
     private DefaultTableModel modelTable1;
     private DefaultListModel modelList1;
-    private final ArrayList<BeanDeamon> deamons;
+    private final ArrayList<BeanDaemon> deamons;
     private final GenericFactory genericFactory;
     private boolean listening = false;
 
     /**
      * Creates new form ModulesDeamonsManager
      */
-    public ModulesDeamonsManager(java.awt.Frame parent, boolean modal, final GenericFactory genericFactory, final ArrayList<BeanDeamon> deamons) {
+    public ModulesDeamonsManager(java.awt.Frame parent, boolean modal, final GenericFactory genericFactory, final ArrayList<BeanDaemon> deamons) {
         super(parent, modal);
         initComponents();
         this.deamons = deamons;
         this.genericFactory = genericFactory;
-        for(BeanDeamon bd: deamons)
+        for(BeanDaemon bd: deamons)
         {
             modelList1.addElement(bd.getDeamonClassName());
         }
@@ -196,7 +196,7 @@ public class ModulesDeamonsManager extends javar.JRDialog {
            modelTable1.removeRow(0);
        }
        
-       BeanDeamon bd = deamons.get(row);
+       BeanDaemon bd = deamons.get(row);
        modelTable1.addRow(new Object[]{"enabled", bd.isEnabled()?"yes":"no", ""});
        modelTable1.addRow(new Object[]{"timeInMillis", bd.getTimeInMillis()+"", ""});
        modelTable1.addRow(new Object[]{"showMessage", bd.isShowMessage()?"yes":"no", ""});

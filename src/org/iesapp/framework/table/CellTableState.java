@@ -16,6 +16,12 @@ public class CellTableState {
     private int state;
     private int code;
 
+    /**
+     * 
+     * @param string
+     * @param mcode (negative ones are not rendered)
+     * @param status index of the index resorce 0, 1, 2, ...
+     */
     public CellTableState(String string, int mcode, int status) {
        text = string;
        code = mcode;

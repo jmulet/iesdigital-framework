@@ -35,8 +35,12 @@ public class UserPreferencesModule extends TopModuleWindow {
         this.moduleName = "userPreferences";
         this.moduleDisplayName = bundle.getString("userPreferences");
         this.moduleDescription = "Allows users to customize modules";     
-        
-        ActionListener defaultAction = new ActionListener() {
+    }
+    
+    @Override
+    public void postInitialize() {
+    
+          ActionListener defaultAction = new ActionListener() {
 
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -53,7 +57,7 @@ public class UserPreferencesModule extends TopModuleWindow {
                     coreCfg.setUserPreferences(key, value); 
                     coreCfg.saveIniProperties();
                 }
-                else if(source instanceof JComboBox)
+                else if(source instanceof JCheckBox)
                 {
                     String value = ((JCheckBox) source).isSelected()?"yes":"no";
                     coreCfg.setUserPreferences(key, value); 
@@ -62,9 +66,15 @@ public class UserPreferencesModule extends TopModuleWindow {
             }
         };
         
+        //These are items from the framework section
         jComboBox1.addActionListener(defaultAction);
         jComboBox2.addActionListener(defaultAction);
         jComboBox3.addActionListener(defaultAction);
+       
+         //However we must set initial values for them
+        jComboBox1.setSelectedItem(coreCfg.getUserPreferences().getProperty(jComboBox1.getActionCommand()));
+        jComboBox2.setSelectedItem(coreCfg.getUserPreferences().getProperty(jComboBox2.getActionCommand()));
+        jComboBox3.setSelectedItem(coreCfg.getUserPreferences().getProperty(jComboBox3.getActionCommand()));
         
         //Append further module preferences
         //Check for all openened modules, registered in TopModuleRegistry
@@ -135,17 +145,8 @@ public class UserPreferencesModule extends TopModuleWindow {
 
         getContentContainer().setLayout(new java.awt.BorderLayout());
 
-        com.l2fprod.common.swing.PercentLayout percentLayout2 = new com.l2fprod.common.swing.PercentLayout();
-        percentLayout2.setGap(14);
-        percentLayout2.setOrientation(1);
-        jTaskPane1.setLayout(percentLayout2);
-
         jTaskPaneGroup1.setAnimated(false);
         jTaskPaneGroup1.setTitle("General");
-        com.l2fprod.common.swing.PercentLayout percentLayout1 = new com.l2fprod.common.swing.PercentLayout();
-        percentLayout1.setGap(2);
-        percentLayout1.setOrientation(1);
-        jTaskPaneGroup1.getContentPane().setLayout(percentLayout1);
 
         jPanel1.setOpaque(false);
         jPanel1.setLayout(new java.awt.BorderLayout());
@@ -177,7 +178,7 @@ public class UserPreferencesModule extends TopModuleWindow {
         jLabel3.setText("Comportament d'inici");
         jPanel3.add(jLabel3, java.awt.BorderLayout.WEST);
 
-        jComboBox3.setModel(new javax.swing.DefaultComboBoxModel(new String[] { "NORMAL", "TOOLBAR" }));
+        jComboBox3.setModel(new javax.swing.DefaultComboBoxModel(new String[] { "AUTO", "TOOLBAR", "NORMAL", "EXTENDED" }));
         jComboBox3.setActionCommand("framework.startupPolicy");
         jPanel3.add(jComboBox3, java.awt.BorderLayout.EAST);
 

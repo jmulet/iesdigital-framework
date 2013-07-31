@@ -108,12 +108,14 @@ public class CoreCfg extends org.iesapp.clients.iesdigital.ICoreData{
     
     protected javax.help.HelpBroker mainHelpBroker;
     protected javax.help.HelpSet mainHelpSet;
+    private final long startTime;
     
 
     //Default constructor
     public CoreCfg(final String[] args, Closable closable) {
         //get preInitialization
         //initialize();
+        startTime = System.currentTimeMillis();
     }
 
     public int initialize() {
@@ -869,6 +871,10 @@ public class CoreCfg extends org.iesapp.clients.iesdigital.ICoreData{
         }
         
         return mainHelpSet;
+    }
+
+    public long getUpTime() {
+        return System.currentTimeMillis() - startTime;
     }
  
 }

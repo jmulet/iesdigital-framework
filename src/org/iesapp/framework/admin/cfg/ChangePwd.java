@@ -84,7 +84,7 @@ public class ChangePwd extends javar.JRDialog {
         jLabel4.setText("iesDigital");
 
         jLabel5.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
-        jLabel5.setIcon(new javax.swing.ImageIcon(getClass().getResource("/iesapp/core/icons/about.gif"))); // NOI18N
+        jLabel5.setIcon(new javax.swing.ImageIcon(getClass().getResource("/org/iesapp/framework/icons/about.jpg"))); // NOI18N
         jLabel5.setVerticalAlignment(javax.swing.SwingConstants.BOTTOM);
 
         jLabel6.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N

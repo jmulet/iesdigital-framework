@@ -47,10 +47,10 @@ public class TopModuleWindow extends javax.swing.JPanel implements Lookup.Provid
 
     protected boolean multipleInstance = true;
     protected boolean openingRequired = true;
-    protected Stamp stamper;
-    protected SysTray stray;
-    protected CoreCfg coreCfg;
-    protected Object initializationObject;
+    public Stamp stamper;
+    public SysTray stray;
+    public CoreCfg coreCfg;
+    public Object initializationObject;
     protected String moduleName = "moduleName";
     protected String moduleDisplayName = "Basic Module";
     protected String moduleDescription = "A basic pluggable module by J. Mulet";
@@ -66,7 +66,7 @@ public class TopModuleWindow extends javax.swing.JPanel implements Lookup.Provid
             = new ImageIcon(TopModuleWindow.class.getResource("/org/iesapp/framework/icons/plugin.gif"));
     private boolean firstCall = true;
     //Provides back control on UIFramework
-    protected UIFramework uiFramework;
+    public UIFramework uiFramework;
     //STATUS FOR A MODULE
     public static final byte STATUS_NORMAL = 1;
     public static final byte STATUS_SLEEPING = 0;
@@ -75,13 +75,15 @@ public class TopModuleWindow extends javax.swing.JPanel implements Lookup.Provid
     private HelpSet moduleHelpSet;
     //PREFERENCES
     protected ArrayList<UserPreferencesBean> userModulePreferences = null;
+    private final long startTime;
 
     //  protected ModuleClassLoader moduleClassLoader;
     /**
      * Creates new form TopWindow
      */
     public TopModuleWindow() {
-
+        startTime = System.currentTimeMillis();
+        
         initComponents();
 
         content = new InstanceContent();
@@ -426,16 +428,15 @@ public class TopModuleWindow extends javax.swing.JPanel implements Lookup.Provid
             boolean mustskip = DockingFrameworkApp.pluginLoadPref.equalsIgnoreCase("no");
             if (mustskip) {
                 //System.out.println(" Skip "+plg.getClassName()+" because policy of app");
-
                 continue;
             }
 
             //Adds to classpath module jar
-            File jarfile = new File(CoreCfg.contextRoot + "\\modules\\" + plg.getJar());
-            org.iesapp.framework.util.JarClassLoader.getInstance().addToClasspath(jarfile);
+            File jarfile = new File(CoreCfg.contextRoot + File.separator + "modules" + File.separator + plg.getJar());
+            moduleClassLoader.addToClasspath(jarfile);
             //Adds to classpath any other required lib for this module
             for (String s : plg.getRequiredLibs()) {
-                org.iesapp.framework.util.JarClassLoader.getInstance().addToClasspath(new File(CoreCfg.contextRoot + "\\" + s));
+                moduleClassLoader.addToClasspath(new File(CoreCfg.contextRoot +  File.separator + "modules" + File.separator  + s));
             }
 
         }
@@ -561,6 +562,11 @@ public class TopModuleWindow extends javax.swing.JPanel implements Lookup.Provid
 
     public void setModuleClassLoader(JarClassLoader moduleClassLoader) {
         this.moduleClassLoader = moduleClassLoader;
+    }
+    
+    public long getUpTime()
+    {
+        return System.currentTimeMillis() - startTime;
     }
 
 }

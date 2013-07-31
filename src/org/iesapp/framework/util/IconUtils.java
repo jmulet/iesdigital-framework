@@ -37,7 +37,7 @@ public class IconUtils {
     {
         if(deleteIcon==null)
         {
-            deleteIcon = getIconResource(null, "org/iesapp/framework/delete.gif");
+            deleteIcon = getIconResource(null, "org/iesapp/framework/icons/delete.gif");
         }
         return deleteIcon;
     }
@@ -46,7 +46,7 @@ public class IconUtils {
     {
         if(exitIcon==null)
         {
-            exitIcon = getIconResource(null, "org/iesapp/framework/exit.gif");
+            exitIcon = getIconResource(null, "org/iesapp/framework/icons/exit.gif");
         }
         return exitIcon;
     }
@@ -55,7 +55,7 @@ public class IconUtils {
     {
         if(saveIcon==null)
         {
-            saveIcon = getIconResource(null, "org/iesapp/framework/save.gif");
+            saveIcon = getIconResource(null, "org/iesapp/framework/icons/save.gif");
         }
         return saveIcon;
     }
@@ -64,7 +64,7 @@ public class IconUtils {
     {
         if(attentionIcon==null)
         {
-            attentionIcon = getIconResource(null, "org/iesapp/framework/attention.png");
+            attentionIcon = getIconResource(null, "org/iesapp/framework/icons/attention.png");
         }
         return attentionIcon;
     }
@@ -73,7 +73,7 @@ public class IconUtils {
     {
         if(backIcon==null)
         {
-            backIcon = getIconResource(null, "org/iesapp/framework/back.gif");
+            backIcon = getIconResource(null, "org/iesapp/framework/icons/back.gif");
         }
         return backIcon;
     }
@@ -82,7 +82,7 @@ public class IconUtils {
     {
         if(forwardIcon==null)
         {
-            forwardIcon = getIconResource(null, "org/iesapp/framework/forward.gif");
+            forwardIcon = getIconResource(null, "org/iesapp/framework/icons/forward.gif");
         }
         return forwardIcon;
     }
@@ -91,7 +91,7 @@ public class IconUtils {
     {
         if(upIcon==null)
         {
-            upIcon = getIconResource(null, "org/iesapp/framework/up.gif");
+            upIcon = getIconResource(null, "org/iesapp/framework/icons/up.gif");
         }
         return upIcon;
     }
@@ -100,7 +100,7 @@ public class IconUtils {
     {
         if(downIcon==null)
         {
-            downIcon = getIconResource(null, "org/iesapp/framework/down.gif");
+            downIcon = getIconResource(null, "org/iesapp/framework/icons/down.gif");
         }
         return downIcon;
     }
@@ -109,7 +109,7 @@ public class IconUtils {
     {
         if(configIcon==null)
         {
-            configIcon = getIconResource(null, "org/iesapp/framework/configIcon.gif");
+            configIcon = getIconResource(null, "org/iesapp/framework/icons/configIcon.gif");
         }
         return configIcon;
     }
@@ -118,7 +118,7 @@ public class IconUtils {
     {
         if(sendIcon==null)
         {
-            sendIcon = getIconResource(null, "org/iesapp/framework/envia.gif");
+            sendIcon = getIconResource(null, "org/iesapp/framework/icons/envia.gif");
         }
         return sendIcon;
     }
@@ -127,7 +127,7 @@ public class IconUtils {
     {
         if(runIcon==null)
         {
-            runIcon = getIconResource(null, "org/iesapp/framework/run.gif");
+            runIcon = getIconResource(null, "org/iesapp/framework/icons/run.gif");
         }
         return runIcon;
     }
@@ -136,7 +136,7 @@ public class IconUtils {
     {
         if(printIcon==null)
         {
-            printIcon = getIconResource(null, "org/iesapp/framework/print.gif");
+            printIcon = getIconResource(null, "org/iesapp/framework/icons/print.gif");
         }
         return printIcon;
     }
@@ -145,7 +145,7 @@ public class IconUtils {
     {
         if(moduleIcon==null)
         {
-            moduleIcon = getIconResource(null, "org/iesapp/framework/module_icon.gif");
+            moduleIcon = getIconResource(null, "org/iesapp/framework/icons/module_icon.gif");
         }
         return moduleIcon;
     }
@@ -154,7 +154,7 @@ public class IconUtils {
     {
         if(pluginIcon==null)
         {
-            pluginIcon = getIconResource(null, "org/iesapp/framework/plugin.gif");
+            pluginIcon = getIconResource(null, "org/iesapp/framework/icons/plugin.gif");
         }
         return pluginIcon;
     }
@@ -163,7 +163,7 @@ public class IconUtils {
     {
         if(insertIcon==null)
         {
-            insertIcon = getIconResource(null, "org/iesapp/framework/insert.gif");
+            insertIcon = getIconResource(null, "org/iesapp/framework/icons/insert.gif");
         }
         return insertIcon;
     }
@@ -178,7 +178,7 @@ public class IconUtils {
     }
     public static Icon getFrameworkIcon(String iconName)
     {
-        return getIconResource(null, "org/iesapp/framework/"+iconName);         
+        return getIconResource(null, "org/iesapp/framework/icons/"+iconName);         
     }
     
     /**

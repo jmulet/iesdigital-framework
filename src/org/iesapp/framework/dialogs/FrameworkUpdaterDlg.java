@@ -6,17 +6,9 @@
 package org.iesapp.framework.dialogs;
 
 import java.io.File;
-import java.io.IOException;
-import java.util.Observable;
-import java.util.Observer;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import org.iesapp.framework.pluggable.UIFramework;
-import org.iesapp.framework.pluggable.modulesAPI.GenericFactory;
-import org.iesapp.framework.pluggable.modulesAPI.ModulesManager;
 import org.iesapp.framework.util.CoreCfg;
-import org.iesapp.updater.BeanModulesRepo;
-import org.iesapp.updater.FileDownloader;
+import org.iesapp.updater.BeanDistroRepo;
 import org.iesapp.updater.FileDownloaderPanel;
 import org.iesapp.util.StringUtils;
 
@@ -24,48 +16,51 @@ import org.iesapp.util.StringUtils;
  *
  * @author Josep
  */
-public class ModuleUpdaterDlg extends javax.swing.JDialog implements Observer {
-    private final BeanModulesRepo moduleRepo;
-    private final String installedVersion;
+public class FrameworkUpdaterDlg extends javax.swing.JDialog {
+    private final BeanDistroRepo distroRepo;
+    private final String installedVersion = CoreCfg.VERSION;
     private FileDownloaderPanel downloaderPanel;
     private final String currentAppClass;
     private final UIFramework uiFramework;
+    private final File f1;
 
     /**
      * Creates a new ModuleUpdaterDlg instance
      * @param parent
      * @param modal
-     * @param installedVersion
-     * @param moduleRepo
+     * @param distroRepo
+     * @param whatsnew
      * @param currentAppClass
      * @param uiFramework 
      */
-    public ModuleUpdaterDlg(java.awt.Frame parent, boolean modal, 
-            String installedVersion, BeanModulesRepo moduleRepo, 
-            String currentAppClass, UIFramework uiFramework) {
+    public FrameworkUpdaterDlg(java.awt.Frame parent, boolean modal, 
+            BeanDistroRepo distroRepo, String whatsnew, String currentAppClass, UIFramework uiFramework) {
         super(parent, modal);
         this.setUndecorated(true);
         initComponents();
-        this.moduleRepo = moduleRepo;
-        this.installedVersion = installedVersion;
+        this.distroRepo = distroRepo;
         this.currentAppClass = currentAppClass;
         this.uiFramework = uiFramework;
         
         jPanel2.setVisible(false);        
-        this.jTextField1.setText(moduleRepo.getName()+" : "+moduleRepo.getClassName());
-        this.jTextField2.setText(moduleRepo.getLatestVersion());
+        this.jTextField2.setText(distroRepo.getVersion());
         this.jTextField3.setText(installedVersion);
-        String whatsnew = moduleRepo.getLastVersionBean().getWhatsnew();
         if(whatsnew !=null && !whatsnew.isEmpty())
         {
             jTextArea1.setText(whatsnew);
         }
         
         //Check if module file has already been downloaded?
-        String url = moduleRepo.getLastVersionBean().getFileName();
+        String url = distroRepo.getFile();
         String fname = StringUtils.AfterLast(url, "/");
-        File f = new File(CoreCfg.contextRoot+File.separator+"installables"+File.separator+fname);        
-        jButton2.setEnabled(f.exists());
+        String downloadPath = System.getProperty("user.home")+File.separator+"Downloads";
+        File f0 = new File(downloadPath);
+        if(!f0.exists())
+        {
+            f0.mkdirs();
+        }
+        f1 = new File(downloadPath+File.separator+fname);        
+       
     }
 
     /**
@@ -83,18 +78,14 @@ public class ModuleUpdaterDlg extends javax.swing.JDialog implements Observer {
         jLabel3 = new javax.swing.JLabel();
         jScrollPane1 = new javax.swing.JScrollPane();
         jTextArea1 = new javax.swing.JTextArea();
-        jLabel2 = new javax.swing.JLabel();
         jLabel5 = new javax.swing.JLabel();
         jTextField2 = new javax.swing.JTextField();
         jLabel1 = new javax.swing.JLabel();
-        jCheckBox1 = new javax.swing.JCheckBox();
         jButton4 = new javax.swing.JButton();
-        jTextField1 = new javax.swing.JTextField();
         jLabel4 = new javax.swing.JLabel();
         jPanel2 = new javax.swing.JPanel();
         jPanel3 = new javax.swing.JPanel();
         jButton3 = new javax.swing.JButton();
-        jButton2 = new javax.swing.JButton();
         jButton1 = new javax.swing.JButton();
         jSeparator2 = new javax.swing.JSeparator();
 
@@ -125,16 +116,11 @@ public class ModuleUpdaterDlg extends javax.swing.JDialog implements Observer {
         jTextArea1.setWrapStyleWord(true);
         jScrollPane1.setViewportView(jTextArea1);
 
-        jLabel2.setText("Module:");
-
         jLabel5.setText("Versions:");
 
         jTextField2.setEditable(false);
 
         jLabel1.setText("What's new?");
-
-        jCheckBox1.setSelected(true);
-        jCheckBox1.setText("Update in all existing applications");
 
         jButton4.setIcon(new javax.swing.ImageIcon(getClass().getResource("/org/iesapp/framework/icons/close2.gif"))); // NOI18N
         jButton4.setBorderPainted(false);
@@ -147,10 +133,8 @@ public class ModuleUpdaterDlg extends javax.swing.JDialog implements Observer {
             }
         });
 
-        jTextField1.setEditable(false);
-
         jLabel4.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
-        jLabel4.setText("Module Updater");
+        jLabel4.setText("Download iesDigital");
 
         jPanel2.setLayout(new java.awt.BorderLayout());
 
@@ -158,14 +142,6 @@ public class ModuleUpdaterDlg extends javax.swing.JDialog implements Observer {
         jButton3.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jButton3ActionPerformed(evt);
-            }
-        });
-
-        jButton2.setText("Update");
-        jButton2.setEnabled(false);
-        jButton2.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jButton2ActionPerformed(evt);
             }
         });
 
@@ -184,10 +160,7 @@ public class ModuleUpdaterDlg extends javax.swing.JDialog implements Observer {
                 .addGap(1, 1, 1)
                 .addComponent(jButton3)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                .addComponent(jButton1)
-                .addGap(18, 18, 18)
-                .addComponent(jButton2)
-                .addGap(1, 1, 1))
+                .addComponent(jButton1))
         );
         jPanel3Layout.setVerticalGroup(
             jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -195,7 +168,6 @@ public class ModuleUpdaterDlg extends javax.swing.JDialog implements Observer {
                 .addGap(1, 1, 1)
                 .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(jButton1)
-                    .addComponent(jButton2)
                     .addComponent(jButton3))
                 .addGap(1, 1, 1))
         );
@@ -212,34 +184,26 @@ public class ModuleUpdaterDlg extends javax.swing.JDialog implements Observer {
                             .addComponent(jPanel2, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                             .addComponent(jScrollPane1)
                             .addGroup(jPanel1Layout.createSequentialGroup()
-                                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                                    .addComponent(jLabel5, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                    .addComponent(jLabel2, javax.swing.GroupLayout.PREFERRED_SIZE, 44, javax.swing.GroupLayout.PREFERRED_SIZE))
+                                .addComponent(jLabel5)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 50, Short.MAX_VALUE)
+                                .addComponent(jLabel6)
                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                    .addComponent(jTextField1)
-                                    .addGroup(jPanel1Layout.createSequentialGroup()
-                                        .addGap(0, 46, Short.MAX_VALUE)
-                                        .addComponent(jLabel6)
-                                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                        .addComponent(jTextField3, javax.swing.GroupLayout.PREFERRED_SIZE, 99, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                        .addComponent(jLabel3)
-                                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                        .addComponent(jTextField2, javax.swing.GroupLayout.PREFERRED_SIZE, 99, javax.swing.GroupLayout.PREFERRED_SIZE))))
+                                .addComponent(jTextField3, javax.swing.GroupLayout.PREFERRED_SIZE, 99, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                .addComponent(jLabel3)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                .addComponent(jTextField2, javax.swing.GroupLayout.PREFERRED_SIZE, 99, javax.swing.GroupLayout.PREFERRED_SIZE))
                             .addComponent(jPanel3, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                         .addContainerGap())
-                    .addGroup(jPanel1Layout.createSequentialGroup()
-                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(jCheckBox1)
-                            .addComponent(jLabel1))
-                        .addGap(0, 0, Short.MAX_VALUE))
                     .addGroup(jPanel1Layout.createSequentialGroup()
                         .addComponent(jLabel4)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(jSeparator2)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(jButton4, javax.swing.GroupLayout.PREFERRED_SIZE, 25, javax.swing.GroupLayout.PREFERRED_SIZE))))
+                        .addComponent(jButton4, javax.swing.GroupLayout.PREFERRED_SIZE, 25, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addGroup(jPanel1Layout.createSequentialGroup()
+                        .addComponent(jLabel1)
+                        .addGap(0, 0, Short.MAX_VALUE))))
         );
         jPanel1Layout.setVerticalGroup(
             jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -255,21 +219,15 @@ public class ModuleUpdaterDlg extends javax.swing.JDialog implements Observer {
                                 .addComponent(jSeparator2, javax.swing.GroupLayout.PREFERRED_SIZE, 7, javax.swing.GroupLayout.PREFERRED_SIZE)))))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jLabel2)
-                    .addComponent(jTextField1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addGap(4, 4, 4)
-                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(jLabel3)
                     .addComponent(jTextField2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(jLabel5)
                     .addComponent(jTextField3, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(jLabel6))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jLabel1)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 74, Short.MAX_VALUE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                .addComponent(jCheckBox1)
+                .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 129, Short.MAX_VALUE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jPanel2, javax.swing.GroupLayout.PREFERRED_SIZE, 25, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(1, 1, 1)
@@ -290,44 +248,12 @@ public class ModuleUpdaterDlg extends javax.swing.JDialog implements Observer {
     private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
         //Create a downloadPanel
         jButton1.setEnabled(false);
-        String url = moduleRepo.getLastVersionBean().getFileName();
-        String fname = StringUtils.AfterLast(url, "/");
-        File f = new File(CoreCfg.contextRoot+File.separator+"installables"+File.separator+fname);
-
-        downloaderPanel = new FileDownloaderPanel(url, f);
+        String url = distroRepo.getFile();
+        downloaderPanel = new FileDownloaderPanel(url, f1);
         jPanel2.add(downloaderPanel);
         jPanel2.setVisible(true);
-        downloaderPanel.getFileDownloader().addObserver(this);
         downloaderPanel.download();
     }//GEN-LAST:event_jButton1ActionPerformed
-
-    //UPDATE
-    private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton2ActionPerformed
-        String moduleClassName = moduleRepo.getClassName();
-        String version = moduleRepo.getLatestVersion();
-        
-        if(!jCheckBox1.isSelected())
-        {
-            try {
-                ModulesManager.update(downloaderPanel.getFileDownloader().getOutputFile(),
-                        currentAppClass, GenericFactory.MODULE, moduleClassName, version, true, true);
-            } catch (IOException ex) {
-                Logger.getLogger(ModuleUpdaterDlg.class.getName()).log(Level.SEVERE, null, ex);
-            }
-        }
-        else
-        {
-            try {
-                ModulesManager.update(downloaderPanel.getFileDownloader().getOutputFile(),
-                        GenericFactory.MODULE, moduleClassName, version, true, true);
-            } catch (IOException ex) {
-                Logger.getLogger(ModuleUpdaterDlg.class.getName()).log(Level.SEVERE, null, ex);
-            }
-        }
-        this.setVisible(false);
-        uiFramework.removeModuleUpdater(moduleClassName);
-                
-    }//GEN-LAST:event_jButton2ActionPerformed
 
     private void jButton4ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton4ActionPerformed
         this.setVisible(false);
@@ -341,12 +267,9 @@ public class ModuleUpdaterDlg extends javax.swing.JDialog implements Observer {
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton jButton1;
-    private javax.swing.JButton jButton2;
     private javax.swing.JButton jButton3;
     private javax.swing.JButton jButton4;
-    private javax.swing.JCheckBox jCheckBox1;
     private javax.swing.JLabel jLabel1;
-    private javax.swing.JLabel jLabel2;
     private javax.swing.JLabel jLabel3;
     private javax.swing.JLabel jLabel4;
     private javax.swing.JLabel jLabel5;
@@ -357,28 +280,8 @@ public class ModuleUpdaterDlg extends javax.swing.JDialog implements Observer {
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JSeparator jSeparator2;
     private javax.swing.JTextArea jTextArea1;
-    private javax.swing.JTextField jTextField1;
     private javax.swing.JTextField jTextField2;
     private javax.swing.JTextField jTextField3;
     // End of variables declaration//GEN-END:variables
-
-    @Override
-    public void update(Observable o, Object arg) {
-        if(this.downloaderPanel.getFileDownloader().getStatus()==FileDownloader.COMPLETE)
-        {
-            jButton2.setEnabled(true);
-        }
-    }
-    
-    /**
-     * Disposing this form must stop any possible download
-     */
-    @Override
-    public void dispose() {
-        downloaderPanel.getFileDownloader().cancel();
-        downloaderPanel = null;
-        super.dispose(); 
-    }
-
 
 }
